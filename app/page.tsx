@@ -49,7 +49,6 @@ export default function Home() {
   const [seconds, setSeconds] = useState(0);
   const [permissionError, setPermissionError] = useState("");
   const [privacyAccepted, setPrivacyAccepted] = useState(false);
-  const [improvementAccepted, setImprovementAccepted] = useState(false);
   const [demoSignedIn, setDemoSignedIn] = useState(false);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -228,14 +227,13 @@ export default function Home() {
             <div className="signed-in-row"><span className="account-chip">AM</span><div><strong>Signed in for this prototype</strong><small>alex@example.com</small></div><b>✓</b></div>
           )}
           <div className="consent-card">
-            <h2>Your privacy choices</h2>
+            <h2>Your privacy confirmation</h2>
             <label className="check-row">
               <input type="checkbox" checked={privacyAccepted} onChange={(event) => setPrivacyAccepted(event.target.checked)} />
-              <span><strong>I understand how my practice data is processed.</strong><small>Audio is used for this session and deleted after transcription. Your transcript and result are saved to your account.</small></span>
-            </label>
-            <label className="check-row">
-              <input type="checkbox" checked={improvementAccepted} onChange={(event) => setImprovementAccepted(event.target.checked)} />
-              <span><strong>Help improve eConsul. <em>Optional</em></strong><small>Allow de-identified transcripts and scores to improve the product. Raw audio is not included.</small></span>
+              <span>
+                <strong>I understand how my practice data is processed and used to improve eConsul.</strong>
+                <small>Audio is used for this session and deleted after transcription. Your transcript and result are saved to your account. De-identified transcripts and scores may be used to improve the product; raw audio is not included.</small>
+              </span>
             </label>
           </div>
           <div className="ready-note"><span>◉</span><div><strong>Find a quiet place</strong><small>You will answer 5 questions by voice. Most sessions take about 3 minutes.</small></div></div>
