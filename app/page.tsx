@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type VisaType = "B1/B2" | "F-1" | "J-1";
-type Step = "landing" | "visa" | "consent" | "interview" | "processing" | "results";
+type Step = "landing" | "visa" | "consent" | "briefing" | "interview" | "processing" | "results";
 
 type QuestionSpec = {
   prompt: string;
@@ -167,6 +167,7 @@ export default function Home() {
   const totalFramesRef = useRef(0);
   const audioContextRef = useRef<AudioContext | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+  const speechVoicesRef = useRef<SpeechSynthesisVoice[]>([]);
 
   const questions = useMemo(() => interviewQuestions[visa], [visa]);
 
@@ -198,6 +199,13 @@ export default function Home() {
   }, [stopAnswerCapture, stopSessionTimer]);
 
   useEffect(() => () => releaseMicrophone(), [releaseMicrophone]);
+
+  useEffect(() => {
+    const loadVoices = () => { speechVoicesRef.current = window.speechSynthesis.getVoices(); };
+    loadVoices();
+    window.speechSynthesis.addEventListener("voiceschanged", loadVoices);
+    return () => window.speechSynthesis.removeEventListener("voiceschanged", loadVoices);
+  }, []);
 
   const startVoiceActivityAnalysis = useCallback((stream: MediaStream) => {
     const AudioContextClass = window.AudioContext ?? (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
@@ -292,8 +300,15 @@ export default function Home() {
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(questions[questionIndex].prompt);
     utterance.lang = "en-US";
-    utterance.rate = 0.92;
-    utterance.pitch = 0.95;
+    const availableVoices = window.speechSynthesis.getVoices();
+    const voices = availableVoices.length ? availableVoices : speechVoicesRef.current;
+    const preferredMaleNames = ["alex", "daniel", "david", "aaron", "arthur", "fred", "guy", "male"];
+    const maleVoice = voices.find((voice) => voice.lang.toLowerCase().startsWith("en") && preferredMaleNames.some((name) => voice.name.toLowerCase().includes(name)))
+      ?? voices.find((voice) => voice.lang.toLowerCase().startsWith("en-us"))
+      ?? voices.find((voice) => voice.lang.toLowerCase().startsWith("en"));
+    if (maleVoice) utterance.voice = maleVoice;
+    utterance.rate = 0.9;
+    utterance.pitch = 0.78;
     utterance.onend = startAnswerCapture;
     utterance.onerror = startAnswerCapture;
     window.speechSynthesis.speak(utterance);
@@ -414,14 +429,9 @@ export default function Home() {
             <div className="trust-row" aria-label="Product benefits"><span>✓ Questions spoken first</span><span>✓ Continuous interview</span><span>✓ No invented scores</span></div>
           </div>
           <div className="hero-visual" aria-label="Practice interview preview">
-            <div className="pattern-orb pattern-orb-one" /><div className="pattern-orb pattern-orb-two" />
-            <div className="interview-card">
-              <div className="interview-card-top"><div><span className="live-dot" /> Interview in progress</div><span>02:18</span></div>
-              <p className="question-label">CONSULAR OFFICER</p><h2>Listen carefully. The question is spoken before it appears.</h2>
-              <div className="waveform" aria-hidden="true">{[10, 24, 38, 22, 52, 32, 62, 42, 28, 48, 20, 34, 14].map((height, index) => <i key={index} style={{ height }} />)}</div>
-              <div className="recording-status"><span className="record-dot" /> Microphone stays on</div><div className="preview-progress"><span style={{ width: "40%" }} /></div><p className="preview-count">Question 2 of 5</p>
-            </div>
-            <div className="floating-score"><strong>STRICT</strong><span>Evidence only</span></div>
+            <img className="hero-scene" src="/interview-key-visual.png" alt="Illustration of a visa applicant speaking with a consular officer" />
+            <div className="hero-scene-caption"><span className="live-dot" /><div><strong>Practice the real rhythm</strong><small>Listen, answer, continue.</small></div></div>
+            <div className="floating-score"><strong>5</strong><span>spoken questions</span></div>
           </div>
           <div className="brand-strip"><span>Practice the questions that matter most</span><strong>B1/B2</strong><strong>F-1</strong><strong>J-1</strong></div>
           <section className="how-section" id="how"><p className="section-kicker">HOW IT WORKS</p><h2>A more realistic way to prepare.</h2><div className="steps-grid"><article><b>01</b><h3>Listen first</h3><p>The officer asks each question aloud. Replay it or reveal the text only when needed.</p></article><article><b>02</b><h3>Stay in the interview</h3><p>The timer and microphone continue through the full session.</p></article><article><b>03</b><h3>Get strict feedback</h3><p>Your result uses only captured speech, relevance, pace, fillers, and delivery evidence.</p></article></div></section>
@@ -440,7 +450,26 @@ export default function Home() {
           <div className="consent-card"><h2>Your privacy confirmation</h2><label className="check-row"><input type="checkbox" checked={privacyAccepted} onChange={(event) => setPrivacyAccepted(event.target.checked)} /><span><strong>I understand how my practice data is processed and used to improve eConsul.</strong><small>The microphone stays on for the interview. This beta analyzes speech in your browser and discards recorded audio when the session ends. A connected production version will require a reviewed retention policy.</small></span></label></div>
           <div className="ready-note"><span>◉</span><div><strong>Find a quiet place</strong><small>The timer starts immediately. Listen to each question and answer without stopping the interview.</small></div></div>
           {permissionError && <p className="permission-error" role="alert">{permissionError}</p>}
-          <div className="flow-actions"><button className="back-button" onClick={() => setStep("visa")}>← Back</button><button className="primary-button" disabled={!privacyAccepted || !demoSignedIn} onClick={beginInterview}>Begin interview <span>→</span></button></div>
+          <div className="flow-actions"><button className="back-button" onClick={() => setStep("visa")}>← Back</button><button className="primary-button" disabled={!privacyAccepted || !demoSignedIn} onClick={() => setStep("briefing")}>Continue <span>→</span></button></div>
+        </section>
+      )}
+
+      {step === "briefing" && (
+        <section className="briefing-page">
+          <div className="briefing-visual"><img src="/embassy-preparation.png" alt="Watercolor illustration of a U.S. embassy" /><span>YOUR INTERVIEW IS ABOUT TO BEGIN</span></div>
+          <div className="briefing-copy">
+            <p className="eyebrow"><span>03</span> Final preparation</p>
+            <h1>Step into the interview prepared.</h1>
+            <p>The next screen simulates a short consular interview. Once you start, stay focused and answer naturally.</p>
+            <ol className="briefing-list">
+              <li><b>1</b><div><strong>The officer speaks first</strong><span>Listen to the full question. Replay it once if needed.</span></div></li>
+              <li><b>2</b><div><strong>You answer by voice</strong><span>The microphone and interview timer remain on for the entire session.</span></div></li>
+              <li><b>3</b><div><strong>Reveal text only when necessary</strong><span>If you still do not understand, use “Show question.”</span></div></li>
+              <li><b>4</b><div><strong>Expect a strict review</strong><span>Short, irrelevant, or unclear answers lose points. No answer receives zero.</span></div></li>
+            </ol>
+            {permissionError && <p className="permission-error" role="alert">{permissionError}</p>}
+            <div className="briefing-actions"><button className="back-button" onClick={() => setStep("consent")}>← Back</button><button className="primary-button" onClick={beginInterview}>Start interview <span>→</span></button></div>
+          </div>
         </section>
       )}
 
@@ -448,13 +477,20 @@ export default function Home() {
         <section className="interview-page">
           <div className="interview-meta"><span>{visa} practice</span><strong>Question {questionIndex + 1} of {questions.length}</strong><span className="session-clock"><i /> {formatTime(sessionSeconds)}</span></div>
           <div className="main-progress"><span style={{ width: `${((questionIndex + 1) / questions.length) * 100}%` }} /></div>
-          <div className="question-stage">
-            <p className="question-label">CONSULAR OFFICER</p>
-            {isQuestionSpeaking ? <><h1>Listen to the question.</h1><div className="audio-bars" aria-label="Question audio is playing">{[22, 42, 64, 34, 76, 48, 60, 28, 52].map((height, index) => <i key={index} style={{ height }} />)}</div><p className="answer-prompt">The microphone is on, but your answer analysis starts after the question finishes.</p></> : <>{questionVisible ? <h1 className="question-reveal">{questions[questionIndex].prompt}</h1> : <h1>Answer when you are ready.</h1>}<p className="answer-prompt">The microphone is live. Give a direct, truthful answer, then finish the answer.</p></>}
-            <div className="question-controls"><button className="secondary-button" onClick={speakQuestion}>↻ Replay question</button><button className="secondary-button" onClick={() => setQuestionVisible((visible) => !visible)}>{questionVisible ? "Hide question" : "Show question"}</button></div>
-            <div className={`mic-live ${isQuestionSpeaking ? "muted-analysis" : ""}`}><span className="mic-icon" aria-hidden="true"><i /><b /></span><div><strong>Microphone on · {isQuestionSpeaking ? "Waiting for the officer" : `${answerSeconds}s answer`}</strong><small>{recognitionSupported ? "Analyzing speech, relevance, pace, and delivery" : "Recording is active; speech analysis may not be supported in this browser"}</small></div></div>
-            {!isQuestionSpeaking && liveTranscript && <div className="transcript-live"><span>LIVE TRANSCRIPT</span><p>{liveTranscript}</p></div>}
-            <button className="primary-button finish-answer" disabled={isQuestionSpeaking} onClick={finishAnswer}>{questionIndex === questions.length - 1 ? "Finish interview" : "Finish answer"} <span>→</span></button>
+          <div className="interview-room">
+            <div className={`officer-panel ${isQuestionSpeaking ? "speaking" : ""}`}>
+              <img src="/consular-officer.png" alt="Illustrated male consular officer" />
+              <div className="officer-status"><span>{isQuestionSpeaking ? "●" : "✓"}</span><div><strong>{isQuestionSpeaking ? "Officer is speaking" : "Officer is listening"}</strong><small>Male English voice</small></div></div>
+              {isQuestionSpeaking && <div className="portrait-wave" aria-hidden="true">{[18, 34, 52, 30, 62, 42, 24].map((height, index) => <i key={index} style={{ height }} />)}</div>}
+            </div>
+            <div className="question-stage">
+              <p className="question-label">CONSULAR OFFICER</p>
+              {isQuestionSpeaking ? <><h1>Listen to the question.</h1><div className="audio-bars" aria-label="Question audio is playing">{[22, 42, 64, 34, 76, 48, 60, 28, 52].map((height, index) => <i key={index} style={{ height }} />)}</div><p className="answer-prompt">The microphone is on, but your answer analysis starts after the officer finishes.</p></> : <>{questionVisible ? <h1 className="question-reveal">{questions[questionIndex].prompt}</h1> : <h1>Answer when you are ready.</h1>}<p className="answer-prompt">The officer is listening. Give a direct, truthful answer, then finish the answer.</p></>}
+              <div className="question-controls"><button className="secondary-button" onClick={speakQuestion}>↻ Replay question</button><button className="secondary-button" onClick={() => setQuestionVisible((visible) => !visible)}>{questionVisible ? "Hide question" : "Show question"}</button></div>
+              <div className={`mic-live ${isQuestionSpeaking ? "muted-analysis" : ""}`}><span className="mic-icon" aria-hidden="true"><i /><b /></span><div><strong>Microphone on · {isQuestionSpeaking ? "Waiting for the officer" : `${answerSeconds}s answer`}</strong><small>{recognitionSupported ? "Analyzing speech, relevance, pace, and delivery" : "Recording is active; speech analysis may not be supported in this browser"}</small></div></div>
+              {!isQuestionSpeaking && liveTranscript && <div className="transcript-live"><span>LIVE TRANSCRIPT</span><p>{liveTranscript}</p></div>}
+              <button className="primary-button finish-answer" disabled={isQuestionSpeaking} onClick={finishAnswer}>{questionIndex === questions.length - 1 ? "Finish interview" : "Finish answer"} <span>→</span></button>
+            </div>
           </div>
           <button className="quiet-exit" onClick={endPractice}>End practice</button>
         </section>
