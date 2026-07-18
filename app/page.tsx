@@ -5,27 +5,69 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 type VisaType = "B1/B2" | "F-1" | "J-1";
 type Step = "landing" | "visa" | "consent" | "interview" | "processing" | "results";
 
-const interviewQuestions: Record<VisaType, string[]> = {
+type QuestionSpec = {
+  prompt: string;
+  criteria: string[][];
+};
+
+type AnswerAnalysis = {
+  question: string;
+  transcript: string;
+  duration: number;
+  wordCount: number;
+  fillerCount: number;
+  wordsPerMinute: number;
+  relevance: number;
+  clarity: number;
+  delivery: number;
+  completeness: number;
+  score: number;
+};
+
+type RecognitionResultLike = {
+  isFinal: boolean;
+  0: { transcript: string; confidence: number };
+};
+
+type RecognitionEventLike = {
+  resultIndex: number;
+  results: ArrayLike<RecognitionResultLike>;
+};
+
+type RecognitionLike = {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onresult: ((event: RecognitionEventLike) => void) | null;
+  onerror: (() => void) | null;
+  onend: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+};
+
+type RecognitionConstructor = new () => RecognitionLike;
+
+const interviewQuestions: Record<VisaType, QuestionSpec[]> = {
   "B1/B2": [
-    "What is the purpose of your trip to the United States?",
-    "Which places will you visit, and how long will you stay?",
-    "Who will pay for your trip?",
-    "Tell me about your current job and a normal workday.",
-    "What plans and responsibilities will bring you back home?",
+    { prompt: "What is the purpose of your trip to the United States?", criteria: [["tourism", "vacation", "visit", "business", "conference"], ["travel", "trip", "united states", "u.s."]] },
+    { prompt: "Which places will you visit, and how long will you stay?", criteria: [["day", "week", "month", "date"], ["new york", "california", "florida", "washington", "boston", "chicago", "hotel", "city", "state"]] },
+    { prompt: "Who will pay for your trip?", criteria: [["myself", "I will", "employer", "company", "parents", "family", "sponsor"], ["salary", "savings", "budget", "cost", "pay"]] },
+    { prompt: "Tell me about your current job and a normal workday.", criteria: [["work", "job", "employed", "company", "business"], ["manage", "design", "teach", "develop", "meet", "client", "responsible", "daily"]] },
+    { prompt: "What plans and responsibilities will bring you back home?", criteria: [["return", "back", "home"], ["job", "family", "children", "business", "study", "property", "responsibility", "project"]] },
   ],
   "F-1": [
-    "Why did you choose this university and program?",
-    "How does this program support your career plans?",
-    "Who will pay for your tuition and living costs?",
-    "What is your academic background?",
-    "What will you do after you complete your studies?",
+    { prompt: "Why did you choose this university and program?", criteria: [["university", "college", "school"], ["program", "course", "degree", "faculty", "curriculum"], ["because", "choose", "selected"]] },
+    { prompt: "How does this program support your career plans?", criteria: [["career", "profession", "job", "work"], ["skill", "knowledge", "experience", "qualification"], ["return", "home", "future"]] },
+    { prompt: "Who will pay for your tuition and living costs?", criteria: [["myself", "parents", "family", "sponsor", "scholarship", "employer"], ["tuition", "living", "cost", "fund", "savings", "income"]] },
+    { prompt: "What is your academic background?", criteria: [["degree", "school", "university", "college", "graduated"], ["studied", "major", "subject", "course", "academic"]] },
+    { prompt: "What will you do after you complete your studies?", criteria: [["return", "back", "home"], ["career", "job", "work", "business", "profession"], ["after", "graduate", "complete", "finish"]] },
   ],
   "J-1": [
-    "Why is this exchange program important to you?",
-    "What will you do during the program?",
-    "Who is sponsoring your trip and expenses?",
-    "How will you use this experience after you return home?",
-    "What responsibilities or plans are waiting for you at home?",
+    { prompt: "Why is this exchange program important to you?", criteria: [["exchange", "program"], ["experience", "skill", "learn", "training", "culture"], ["career", "future", "work"]] },
+    { prompt: "What will you do during the program?", criteria: [["training", "internship", "research", "study", "workshop", "activity"], ["program", "host", "organization", "sponsor"]] },
+    { prompt: "Who is sponsoring your trip and expenses?", criteria: [["sponsor", "organization", "company", "program", "myself", "family"], ["cost", "expense", "fund", "pay", "stipend", "salary"]] },
+    { prompt: "How will you use this experience after you return home?", criteria: [["return", "back", "home"], ["experience", "skill", "knowledge"], ["career", "job", "work", "business", "project"]] },
+    { prompt: "What responsibilities or plans are waiting for you at home?", criteria: [["home", "return", "back"], ["job", "family", "children", "business", "study", "responsibility", "project"]] },
   ],
 };
 
@@ -35,7 +77,63 @@ const visaOptions: Array<{ type: VisaType; title: string; detail: string; tag: s
   { type: "J-1", title: "Exchange visitor", detail: "Exchange, internship, trainee, or cultural program", tag: "Exchange" },
 ];
 
-const scoreByVisa: Record<VisaType, number> = { "B1/B2": 82, "F-1": 78, "J-1": 85 };
+const fillerPattern = /\b(um+|uh+|erm+|like|you know|basically|actually|sort of|kind of)\b/gi;
+
+function clamp(value: number, minimum = 0, maximum = 100) {
+  return Math.min(maximum, Math.max(minimum, value));
+}
+
+function formatTime(totalSeconds: number) {
+  const minutes = Math.floor(totalSeconds / 60).toString().padStart(2, "0");
+  const seconds = (totalSeconds % 60).toString().padStart(2, "0");
+  return `${minutes}:${seconds}`;
+}
+
+function analyzeAnswer(question: QuestionSpec, transcript: string, duration: number, confidence: number | null, voiceRatio: number): AnswerAnalysis {
+  const cleanTranscript = transcript.trim().replace(/\s+/g, " ");
+  const lower = cleanTranscript.toLowerCase();
+  const words = cleanTranscript ? cleanTranscript.split(/\s+/) : [];
+  const fillerCount = (lower.match(fillerPattern) ?? []).length;
+  const wordsPerMinute = duration > 0 ? Math.round(words.length / (duration / 60)) : 0;
+  const matchedCriteria = question.criteria.filter((group) => group.some((term) => lower.includes(term.toLowerCase()))).length;
+  const relevance = Math.round((matchedCriteria / question.criteria.length) * 100);
+
+  let lengthQuality = 100;
+  if (words.length < 4) lengthQuality = 10;
+  else if (words.length < 9) lengthQuality = 45;
+  else if (words.length > 85) lengthQuality = 45;
+  else if (words.length > 60) lengthQuality = 70;
+
+  let paceQuality = 100;
+  if (wordsPerMinute < 55 || wordsPerMinute > 220) paceQuality = 25;
+  else if (wordsPerMinute < 80 || wordsPerMinute > 180) paceQuality = 60;
+
+  const fillerQuality = fillerCount === 0 ? 100 : fillerCount <= 2 ? 72 : fillerCount <= 4 ? 45 : 20;
+  const clarity = Math.round(lengthQuality * 0.4 + paceQuality * 0.35 + fillerQuality * 0.25);
+  const recognitionConfidence = confidence === null || confidence <= 0 ? 45 : confidence * 100;
+  const delivery = Math.round(clamp(recognitionConfidence * 0.65 + Math.min(100, voiceRatio * 180) * 0.35));
+  const completeness = Math.round(lengthQuality * 0.55 + relevance * 0.45);
+
+  let score = Math.round(relevance * 0.5 + clarity * 0.2 + delivery * 0.15 + completeness * 0.15);
+  if (!cleanTranscript) score = 0;
+  else if (words.length < 4) score = Math.min(score, 20);
+  else if (relevance === 0) score = Math.min(score, 30);
+  else if (relevance < 50) score = Math.min(score, 55);
+
+  return {
+    question: question.prompt,
+    transcript: cleanTranscript,
+    duration,
+    wordCount: words.length,
+    fillerCount,
+    wordsPerMinute,
+    relevance,
+    clarity,
+    delivery,
+    completeness,
+    score,
+  };
+}
 
 function BrandMark() {
   return <img className="brand-logo" src="/econsul-logo.png" alt="eConsul" />;
@@ -45,85 +143,265 @@ export default function Home() {
   const [step, setStep] = useState<Step>("landing");
   const [visa, setVisa] = useState<VisaType>("B1/B2");
   const [questionIndex, setQuestionIndex] = useState(0);
-  const [isRecording, setIsRecording] = useState(false);
-  const [seconds, setSeconds] = useState(0);
+  const [sessionSeconds, setSessionSeconds] = useState(0);
   const [permissionError, setPermissionError] = useState("");
   const [privacyAccepted, setPrivacyAccepted] = useState(false);
   const [demoSignedIn, setDemoSignedIn] = useState(false);
+  const [isQuestionSpeaking, setIsQuestionSpeaking] = useState(false);
+  const [questionVisible, setQuestionVisible] = useState(false);
+  const [answerSeconds, setAnswerSeconds] = useState(0);
+  const [liveTranscript, setLiveTranscript] = useState("");
+  const [answers, setAnswers] = useState<AnswerAnalysis[]>([]);
+  const [recognitionSupported, setRecognitionSupported] = useState(true);
+
   const recorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const recognitionRef = useRef<RecognitionLike | null>(null);
+  const sessionTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const answerTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const answerStartedAtRef = useRef(0);
+  const answerActiveRef = useRef(false);
+  const transcriptRef = useRef("");
+  const confidenceSamplesRef = useRef<number[]>([]);
+  const voiceFramesRef = useRef(0);
+  const totalFramesRef = useRef(0);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
 
   const questions = useMemo(() => interviewQuestions[visa], [visa]);
-  const score = scoreByVisa[visa];
 
-  const stopTimer = useCallback(() => {
-    if (timerRef.current) clearInterval(timerRef.current);
-    timerRef.current = null;
+  const stopAnswerCapture = useCallback(() => {
+    answerActiveRef.current = false;
+    if (answerTimerRef.current) clearInterval(answerTimerRef.current);
+    answerTimerRef.current = null;
+    try { recognitionRef.current?.stop(); } catch { /* already stopped */ }
+    recognitionRef.current = null;
+  }, []);
+
+  const stopSessionTimer = useCallback(() => {
+    if (sessionTimerRef.current) clearInterval(sessionTimerRef.current);
+    sessionTimerRef.current = null;
   }, []);
 
   const releaseMicrophone = useCallback(() => {
+    stopAnswerCapture();
+    stopSessionTimer();
+    window.speechSynthesis?.cancel();
+    if (recorderRef.current?.state === "recording") recorderRef.current.stop();
+    recorderRef.current = null;
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
+    if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+    animationFrameRef.current = null;
+    void audioContextRef.current?.close();
+    audioContextRef.current = null;
+  }, [stopAnswerCapture, stopSessionTimer]);
+
+  useEffect(() => () => releaseMicrophone(), [releaseMicrophone]);
+
+  const startVoiceActivityAnalysis = useCallback((stream: MediaStream) => {
+    const AudioContextClass = window.AudioContext ?? (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!AudioContextClass) return;
+    const context = new AudioContextClass();
+    const source = context.createMediaStreamSource(stream);
+    const analyser = context.createAnalyser();
+    analyser.fftSize = 256;
+    source.connect(analyser);
+    audioContextRef.current = context;
+    const samples = new Uint8Array(analyser.fftSize);
+    const measure = () => {
+      analyser.getByteTimeDomainData(samples);
+      if (answerActiveRef.current) {
+        let sum = 0;
+        for (const sample of samples) {
+          const normalized = (sample - 128) / 128;
+          sum += normalized * normalized;
+        }
+        const rms = Math.sqrt(sum / samples.length);
+        totalFramesRef.current += 1;
+        if (rms > 0.025) voiceFramesRef.current += 1;
+      }
+      animationFrameRef.current = requestAnimationFrame(measure);
+    };
+    measure();
   }, []);
 
-  useEffect(() => {
-    return () => {
-      stopTimer();
-      releaseMicrophone();
+  const getRecognitionConstructor = useCallback(() => {
+    const speechWindow = window as typeof window & {
+      SpeechRecognition?: RecognitionConstructor;
+      webkitSpeechRecognition?: RecognitionConstructor;
     };
-  }, [releaseMicrophone, stopTimer]);
+    return speechWindow.SpeechRecognition ?? speechWindow.webkitSpeechRecognition ?? null;
+  }, []);
 
-  const completeAnswer = useCallback(() => {
-    setIsRecording(false);
-    stopTimer();
-    releaseMicrophone();
-    setSeconds(0);
-    if (questionIndex < questions.length - 1) {
-      setQuestionIndex((current) => current + 1);
-      return;
-    }
-    setStep("processing");
-    window.setTimeout(() => setStep("results"), 1800);
-  }, [questionIndex, questions.length, releaseMicrophone, stopTimer]);
+  const startAnswerCapture = useCallback(() => {
+    transcriptRef.current = "";
+    confidenceSamplesRef.current = [];
+    voiceFramesRef.current = 0;
+    totalFramesRef.current = 0;
+    answerStartedAtRef.current = Date.now();
+    answerActiveRef.current = true;
+    setAnswerSeconds(0);
+    setLiveTranscript("");
+    setIsQuestionSpeaking(false);
+    answerTimerRef.current = setInterval(() => setAnswerSeconds((value) => value + 1), 1000);
 
-  const startRecording = async () => {
+    const Recognition = getRecognitionConstructor();
+    setRecognitionSupported(Boolean(Recognition));
+    if (!Recognition) return;
+
+    const recognition = new Recognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = "en-US";
+    recognition.onresult = (event) => {
+      let interim = "";
+      let finalAddition = "";
+      for (let index = event.resultIndex; index < event.results.length; index += 1) {
+        const result = event.results[index];
+        const text = result[0]?.transcript ?? "";
+        if (result.isFinal) {
+          finalAddition += ` ${text}`;
+          if (result[0]?.confidence > 0) confidenceSamplesRef.current.push(result[0].confidence);
+        } else {
+          interim += ` ${text}`;
+        }
+      }
+      if (finalAddition) transcriptRef.current = `${transcriptRef.current} ${finalAddition}`.trim();
+      setLiveTranscript(`${transcriptRef.current} ${interim}`.trim());
+    };
+    recognition.onerror = () => undefined;
+    recognition.onend = () => {
+      if (!answerActiveRef.current) return;
+      window.setTimeout(() => {
+        if (!answerActiveRef.current) return;
+        try { recognition.start(); } catch { /* browser is restarting */ }
+      }, 180);
+    };
+    recognitionRef.current = recognition;
+    try { recognition.start(); } catch { setRecognitionSupported(false); }
+  }, [getRecognitionConstructor]);
+
+  const speakQuestion = useCallback(() => {
+    if (step !== "interview") return;
+    stopAnswerCapture();
+    setQuestionVisible(false);
+    setLiveTranscript("");
+    setAnswerSeconds(0);
+    setIsQuestionSpeaking(true);
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(questions[questionIndex].prompt);
+    utterance.lang = "en-US";
+    utterance.rate = 0.92;
+    utterance.pitch = 0.95;
+    utterance.onend = startAnswerCapture;
+    utterance.onerror = startAnswerCapture;
+    window.speechSynthesis.speak(utterance);
+  }, [questionIndex, questions, startAnswerCapture, step, stopAnswerCapture]);
+
+  useEffect(() => {
+    if (step !== "interview") return;
+    const playbackDelay = window.setTimeout(speakQuestion, 250);
+    return () => window.clearTimeout(playbackDelay);
+  }, [questionIndex, speakQuestion, step]);
+
+  const beginInterview = async () => {
     setPermissionError("");
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
       streamRef.current = stream;
       const recorder = new MediaRecorder(stream);
       recorderRef.current = recorder;
       recorder.start();
-      setIsRecording(true);
-      setSeconds(0);
-      timerRef.current = setInterval(() => setSeconds((value) => value + 1), 1000);
+      startVoiceActivityAnalysis(stream);
+      setAnswers([]);
+      setQuestionIndex(0);
+      setSessionSeconds(0);
+      sessionTimerRef.current = setInterval(() => setSessionSeconds((value) => value + 1), 1000);
+      setStep("interview");
     } catch {
-      setPermissionError("Microphone access is blocked. Allow access in your browser and try again.");
+      setPermissionError("Microphone access is required for the interview. Allow access in your browser and try again.");
     }
   };
 
-  const stopRecording = () => {
-    if (recorderRef.current?.state === "recording") recorderRef.current.stop();
-    completeAnswer();
+  const finishAnswer = () => {
+    if (isQuestionSpeaking || !answerActiveRef.current) return;
+    const duration = Math.max(1, Math.round((Date.now() - answerStartedAtRef.current) / 1000));
+    const confidenceSamples = confidenceSamplesRef.current;
+    const confidence = confidenceSamples.length ? confidenceSamples.reduce((sum, value) => sum + value, 0) / confidenceSamples.length : null;
+    const voiceRatio = totalFramesRef.current ? voiceFramesRef.current / totalFramesRef.current : 0;
+    const transcript = transcriptRef.current || liveTranscript;
+    const analysis = analyzeAnswer(questions[questionIndex], transcript, duration, confidence, voiceRatio);
+    stopAnswerCapture();
+    const updatedAnswers = [...answers, analysis];
+    setAnswers(updatedAnswers);
+
+    if (questionIndex < questions.length - 1) {
+      setQuestionIndex((current) => current + 1);
+      return;
+    }
+
+    releaseMicrophone();
+    setStep("processing");
+    window.setTimeout(() => setStep("results"), 1600);
+  };
+
+  const endPractice = () => {
+    releaseMicrophone();
+    setStep("visa");
   };
 
   const restart = () => {
+    releaseMicrophone();
     setQuestionIndex(0);
-    setSeconds(0);
+    setSessionSeconds(0);
+    setAnswers([]);
     setStep("visa");
   };
+
+  const result = useMemo(() => {
+    const noScore = !recognitionSupported;
+    if (!answers.length || noScore) {
+      return {
+        available: false,
+        score: 0,
+        relevance: 0,
+        clarity: 0,
+        delivery: 0,
+        completeness: 0,
+        strengths: [] as Array<{ title: string; detail: string }>,
+        improvements: [{ title: "No score issued", detail: "This browser did not provide a usable speech transcript. eConsul will not invent a result without evidence." }],
+      };
+    }
+    const average = (key: keyof Pick<AnswerAnalysis, "score" | "relevance" | "clarity" | "delivery" | "completeness">) => Math.round(answers.reduce((sum, answer) => sum + answer[key], 0) / answers.length);
+    const score = average("score");
+    const relevance = average("relevance");
+    const clarity = average("clarity");
+    const delivery = average("delivery");
+    const completeness = average("completeness");
+    const averageFillers = answers.reduce((sum, answer) => sum + answer.fillerCount, 0) / answers.length;
+    const strengths: Array<{ title: string; detail: string }> = [];
+    if (relevance >= 72) strengths.push({ title: "Relevant answers", detail: "Most answers addressed the exact question and included expected details." });
+    if (clarity >= 72) strengths.push({ title: "Clear structure", detail: "Your answers were a useful length and your speaking pace was understandable." });
+    if (delivery >= 68) strengths.push({ title: "Steady delivery", detail: "Your voice activity and recognition confidence were reasonably consistent." });
+    if (!strengths.length) strengths.push({ title: "Interview completed", detail: "You stayed with the full interview. Now focus on making each answer specific and direct." });
+
+    const improvements: Array<{ title: string; detail: string }> = [];
+    if (relevance < 70) improvements.push({ title: "Answer the exact question", detail: "Several answers missed expected facts. Give specific names, dates, costs, responsibilities, or plans where relevant." });
+    if (completeness < 70) improvements.push({ title: "Use complete short answers", detail: "Avoid one-word replies. Give one direct sentence followed by one supporting detail." });
+    if (clarity < 70) improvements.push({ title: "Improve pace and structure", detail: "Keep answers around 10–45 seconds and use simple sentences instead of long explanations." });
+    if (delivery < 65) improvements.push({ title: "Sound more controlled", detail: "Speak slightly louder, reduce long pauses, and keep a steady pace. This is delivery feedback, not a personality judgment." });
+    if (averageFillers > 2) improvements.push({ title: "Reduce filler words", detail: "Pause silently instead of using “um,” “uh,” “like,” or “you know.”" });
+    if (!improvements.length) improvements.push({ title: "Add sharper evidence", detail: "Your delivery was solid. Improve further by adding exact dates, amounts, names, and return plans." });
+
+    return { available: true, score, relevance, clarity, delivery, completeness, strengths: strengths.slice(0, 3), improvements: improvements.slice(0, 3) };
+  }, [answers, recognitionSupported]);
 
   return (
     <main className="site-shell">
       <header className="site-header">
-        <button className="logo-button" onClick={() => setStep("landing")} aria-label="Go to home">
-          <BrandMark />
-        </button>
-        <div className="header-right">
-          <span className="demo-pill"><span /> Prototype</span>
-          {demoSignedIn && <span className="account-chip">AM</span>}
-        </div>
+        <button className="logo-button" onClick={() => setStep("landing")} aria-label="Go to home"><BrandMark /></button>
+        <div className="header-right"><span className="demo-pill"><span /> Strict beta</span>{demoSignedIn && <span className="account-chip">AM</span>}</div>
       </header>
 
       {step === "landing" && (
@@ -131,185 +409,70 @@ export default function Home() {
           <div className="hero-copy">
             <p className="eyebrow"><span>●</span> U.S. visa interview practice</p>
             <h1>Two minutes can feel like everything.</h1>
-            <p className="hero-lede">
-              Practice answering clearly, calmly, and honestly before your U.S. consular interview.
-              Get focused feedback in under five minutes.
-            </p>
-            <div className="hero-actions">
-              <button className="primary-button" onClick={() => setStep("visa")}>Start a practice interview <span>→</span></button>
-              <button className="text-button" onClick={() => document.getElementById("how")?.scrollIntoView({ behavior: "smooth" })}>See how it works</button>
-            </div>
-            <div className="trust-row" aria-label="Product benefits">
-              <span>✓ Voice practice</span>
-              <span>✓ Private by design</span>
-              <span>✓ Clear feedback</span>
-            </div>
+            <p className="hero-lede">Practice answering clearly, calmly, and honestly before your U.S. consular interview. Get strict, evidence-based feedback in under five minutes.</p>
+            <div className="hero-actions"><button className="primary-button" onClick={() => setStep("visa")}>Start a practice interview <span>→</span></button><button className="text-button" onClick={() => document.getElementById("how")?.scrollIntoView({ behavior: "smooth" })}>See how it works</button></div>
+            <div className="trust-row" aria-label="Product benefits"><span>✓ Questions spoken first</span><span>✓ Continuous interview</span><span>✓ No invented scores</span></div>
           </div>
           <div className="hero-visual" aria-label="Practice interview preview">
-            <div className="pattern-orb pattern-orb-one" />
-            <div className="pattern-orb pattern-orb-two" />
+            <div className="pattern-orb pattern-orb-one" /><div className="pattern-orb pattern-orb-two" />
             <div className="interview-card">
-              <div className="interview-card-top">
-                <div><span className="live-dot" /> Practice in progress</div>
-                <span>02:18</span>
-              </div>
-              <p className="question-label">CONSULAR OFFICER</p>
-              <h2>What is the purpose of your trip to the United States?</h2>
-              <div className="waveform" aria-hidden="true">
-                {[10, 24, 38, 22, 52, 32, 62, 42, 28, 48, 20, 34, 14].map((height, index) => <i key={index} style={{ height }} />)}
-              </div>
-              <div className="recording-status"><span className="record-dot" /> Listening to your answer...</div>
-              <div className="preview-progress"><span style={{ width: "40%" }} /></div>
-              <p className="preview-count">Question 2 of 5</p>
+              <div className="interview-card-top"><div><span className="live-dot" /> Interview in progress</div><span>02:18</span></div>
+              <p className="question-label">CONSULAR OFFICER</p><h2>Listen carefully. The question is spoken before it appears.</h2>
+              <div className="waveform" aria-hidden="true">{[10, 24, 38, 22, 52, 32, 62, 42, 28, 48, 20, 34, 14].map((height, index) => <i key={index} style={{ height }} />)}</div>
+              <div className="recording-status"><span className="record-dot" /> Microphone stays on</div><div className="preview-progress"><span style={{ width: "40%" }} /></div><p className="preview-count">Question 2 of 5</p>
             </div>
-            <div className="floating-score"><strong>82%</strong><span>Practice score</span></div>
+            <div className="floating-score"><strong>STRICT</strong><span>Evidence only</span></div>
           </div>
-          <div className="brand-strip">
-            <span>Practice the questions that matter most</span>
-            <strong>B1/B2</strong><strong>F-1</strong><strong>J-1</strong>
-          </div>
-          <section className="how-section" id="how">
-            <p className="section-kicker">HOW IT WORKS</p>
-            <h2>A calmer way to prepare.</h2>
-            <div className="steps-grid">
-              <article><b>01</b><h3>Choose your visa</h3><p>Select visitor, student, or exchange visitor practice.</p></article>
-              <article><b>02</b><h3>Answer by voice</h3><p>Hear realistic questions and respond naturally in English.</p></article>
-              <article><b>03</b><h3>Know what to improve</h3><p>See your score, strengths, weak points, and next steps.</p></article>
-            </div>
-          </section>
-          <footer className="site-footer">
-            <BrandMark />
-            <p>Independent practice tool. Not affiliated with the U.S. government. Results do not predict a visa decision.</p>
-          </footer>
+          <div className="brand-strip"><span>Practice the questions that matter most</span><strong>B1/B2</strong><strong>F-1</strong><strong>J-1</strong></div>
+          <section className="how-section" id="how"><p className="section-kicker">HOW IT WORKS</p><h2>A more realistic way to prepare.</h2><div className="steps-grid"><article><b>01</b><h3>Listen first</h3><p>The officer asks each question aloud. Replay it or reveal the text only when needed.</p></article><article><b>02</b><h3>Stay in the interview</h3><p>The timer and microphone continue through the full session.</p></article><article><b>03</b><h3>Get strict feedback</h3><p>Your result uses only captured speech, relevance, pace, fillers, and delivery evidence.</p></article></div></section>
+          <footer className="site-footer"><BrandMark /><p>Independent practice tool. Not affiliated with the U.S. government. Results do not predict a visa decision.</p></footer>
         </section>
       )}
 
       {step === "visa" && (
-        <section className="flow-page">
-          <div className="flow-heading">
-            <p className="eyebrow"><span>01</span> Set up your practice</p>
-            <h1>Which interview are you preparing for?</h1>
-            <p>Choose one path. Your questions will match the purpose of your trip.</p>
-          </div>
-          <div className="visa-grid">
-            {visaOptions.map((option) => (
-              <button key={option.type} className={`visa-card ${visa === option.type ? "selected" : ""}`} onClick={() => setVisa(option.type)}>
-                <span className="visa-tag">{option.tag}</span>
-                <strong>{option.type}</strong>
-                <h2>{option.title}</h2>
-                <p>{option.detail}</p>
-                <i>{visa === option.type ? "✓" : "→"}</i>
-              </button>
-            ))}
-          </div>
-          <div className="flow-actions">
-            <button className="back-button" onClick={() => setStep("landing")}>← Back</button>
-            <button className="primary-button" onClick={() => setStep("consent")}>Continue <span>→</span></button>
-          </div>
-        </section>
+        <section className="flow-page"><div className="flow-heading"><p className="eyebrow"><span>01</span> Set up your practice</p><h1>Which interview are you preparing for?</h1><p>Choose one path. Your questions will match the purpose of your trip.</p></div><div className="visa-grid">{visaOptions.map((option) => <button key={option.type} className={`visa-card ${visa === option.type ? "selected" : ""}`} onClick={() => setVisa(option.type)}><span className="visa-tag">{option.tag}</span><strong>{option.type}</strong><h2>{option.title}</h2><p>{option.detail}</p><i>{visa === option.type ? "✓" : "→"}</i></button>)}</div><div className="flow-actions"><button className="back-button" onClick={() => setStep("landing")}>← Back</button><button className="primary-button" onClick={() => setStep("consent")}>Continue <span>→</span></button></div></section>
       )}
 
       {step === "consent" && (
         <section className="flow-page narrow-flow">
-          <div className="flow-heading">
-            <p className="eyebrow"><span>02</span> Privacy & microphone</p>
-            <h1>Before we begin</h1>
-            <p>Your practice includes personal details. You stay in control of your data.</p>
-          </div>
-          {!demoSignedIn ? (
-            <div className="consent-card sign-in-card">
-              <div className="google-mark" aria-hidden="true">G</div>
-              <div><h2>Save your practice result</h2><p>Continue with Google to keep your history and receive your report by email.</p></div>
-              <button className="google-button" onClick={() => setDemoSignedIn(true)}>Continue with Google</button>
-              <small>Prototype sign-in. Secure Google connection will be added in the integration phase.</small>
-            </div>
-          ) : (
-            <div className="signed-in-row"><span className="account-chip">AM</span><div><strong>Signed in for this prototype</strong><small>alex@example.com</small></div><b>✓</b></div>
-          )}
-          <div className="consent-card">
-            <h2>Your privacy confirmation</h2>
-            <label className="check-row">
-              <input type="checkbox" checked={privacyAccepted} onChange={(event) => setPrivacyAccepted(event.target.checked)} />
-              <span>
-                <strong>I understand how my practice data is processed and used to improve eConsul.</strong>
-                <small>Audio is used for this session and deleted after transcription. Your transcript and result are saved to your account. De-identified transcripts and scores may be used to improve the product; raw audio is not included.</small>
-              </span>
-            </label>
-          </div>
-          <div className="ready-note"><span>◉</span><div><strong>Find a quiet place</strong><small>You will answer 5 questions by voice. Most sessions take about 3 minutes.</small></div></div>
-          <div className="flow-actions">
-            <button className="back-button" onClick={() => setStep("visa")}>← Back</button>
-            <button className="primary-button" disabled={!privacyAccepted || !demoSignedIn} onClick={() => { setQuestionIndex(0); setStep("interview"); }}>Begin interview <span>→</span></button>
-          </div>
+          <div className="flow-heading"><p className="eyebrow"><span>02</span> Privacy & microphone</p><h1>Before we begin</h1><p>The microphone stays on during the full interview. Audio remains on this device in this beta.</p></div>
+          {!demoSignedIn ? <div className="consent-card sign-in-card"><div className="google-mark" aria-hidden="true">G</div><div><h2>Save your practice result</h2><p>Continue with Google to keep your history and receive your report by email.</p></div><button className="google-button" onClick={() => setDemoSignedIn(true)}>Continue with Google</button><small>Prototype sign-in. Secure Google connection will be added in the integration phase.</small></div> : <div className="signed-in-row"><span className="account-chip">AM</span><div><strong>Signed in for this prototype</strong><small>alex@example.com</small></div><b>✓</b></div>}
+          <div className="consent-card"><h2>Your privacy confirmation</h2><label className="check-row"><input type="checkbox" checked={privacyAccepted} onChange={(event) => setPrivacyAccepted(event.target.checked)} /><span><strong>I understand how my practice data is processed and used to improve eConsul.</strong><small>The microphone stays on for the interview. This beta analyzes speech in your browser and discards recorded audio when the session ends. A connected production version will require a reviewed retention policy.</small></span></label></div>
+          <div className="ready-note"><span>◉</span><div><strong>Find a quiet place</strong><small>The timer starts immediately. Listen to each question and answer without stopping the interview.</small></div></div>
+          {permissionError && <p className="permission-error" role="alert">{permissionError}</p>}
+          <div className="flow-actions"><button className="back-button" onClick={() => setStep("visa")}>← Back</button><button className="primary-button" disabled={!privacyAccepted || !demoSignedIn} onClick={beginInterview}>Begin interview <span>→</span></button></div>
         </section>
       )}
 
       {step === "interview" && (
         <section className="interview-page">
-          <div className="interview-meta">
-            <span>{visa} practice</span>
-            <strong>Question {questionIndex + 1} of {questions.length}</strong>
-            <span>About 3 min</span>
-          </div>
+          <div className="interview-meta"><span>{visa} practice</span><strong>Question {questionIndex + 1} of {questions.length}</strong><span className="session-clock"><i /> {formatTime(sessionSeconds)}</span></div>
           <div className="main-progress"><span style={{ width: `${((questionIndex + 1) / questions.length) * 100}%` }} /></div>
           <div className="question-stage">
             <p className="question-label">CONSULAR OFFICER</p>
-            <h1>{questions[questionIndex]}</h1>
-            <p className="answer-prompt">Answer clearly and truthfully. A short, direct answer is best.</p>
-            <div className={`mic-zone ${isRecording ? "active" : ""}`}>
-              <button className="mic-button" onClick={isRecording ? stopRecording : startRecording} aria-label={isRecording ? "Stop recording" : "Start recording"}>
-                <span className="mic-icon" aria-hidden="true"><i /><b /></span>
-              </button>
-              <strong>{isRecording ? `${seconds}s · Recording` : "Tap to answer"}</strong>
-              <small>{isRecording ? "Tap again when you finish" : "Your microphone will turn on"}</small>
-            </div>
-            {permissionError && <p className="permission-error" role="alert">{permissionError}</p>}
+            {isQuestionSpeaking ? <><h1>Listen to the question.</h1><div className="audio-bars" aria-label="Question audio is playing">{[22, 42, 64, 34, 76, 48, 60, 28, 52].map((height, index) => <i key={index} style={{ height }} />)}</div><p className="answer-prompt">The microphone is on, but your answer analysis starts after the question finishes.</p></> : <>{questionVisible ? <h1 className="question-reveal">{questions[questionIndex].prompt}</h1> : <h1>Answer when you are ready.</h1>}<p className="answer-prompt">The microphone is live. Give a direct, truthful answer, then finish the answer.</p></>}
+            <div className="question-controls"><button className="secondary-button" onClick={speakQuestion}>↻ Replay question</button><button className="secondary-button" onClick={() => setQuestionVisible((visible) => !visible)}>{questionVisible ? "Hide question" : "Show question"}</button></div>
+            <div className={`mic-live ${isQuestionSpeaking ? "muted-analysis" : ""}`}><span className="mic-icon" aria-hidden="true"><i /><b /></span><div><strong>Microphone on · {isQuestionSpeaking ? "Waiting for the officer" : `${answerSeconds}s answer`}</strong><small>{recognitionSupported ? "Analyzing speech, relevance, pace, and delivery" : "Recording is active; speech analysis may not be supported in this browser"}</small></div></div>
+            {!isQuestionSpeaking && liveTranscript && <div className="transcript-live"><span>LIVE TRANSCRIPT</span><p>{liveTranscript}</p></div>}
+            <button className="primary-button finish-answer" disabled={isQuestionSpeaking} onClick={finishAnswer}>{questionIndex === questions.length - 1 ? "Finish interview" : "Finish answer"} <span>→</span></button>
           </div>
-          <button className="quiet-exit" onClick={() => { releaseMicrophone(); stopTimer(); setStep("visa"); }}>End practice</button>
+          <button className="quiet-exit" onClick={endPractice}>End practice</button>
         </section>
       )}
 
       {step === "processing" && (
-        <section className="processing-page">
-          <div className="processing-mark"><span>✓</span><i /><i /><i /></div>
-          <p className="section-kicker">INTERVIEW COMPLETE</p>
-          <h1>Reviewing your answers...</h1>
-          <p>We are checking clarity, consistency, purpose, finances, and your plans to return home.</p>
-          <div className="processing-list"><span>✓ Transcribing answers</span><span>✓ Reviewing consistency</span><span className="working">● Preparing feedback</span></div>
-        </section>
+        <section className="processing-page"><div className="processing-mark"><span>✓</span><i /><i /><i /></div><p className="section-kicker">INTERVIEW COMPLETE</p><h1>Checking the evidence...</h1><p>No preset score is used. The result is calculated from what the browser actually heard.</p><div className="processing-list"><span>✓ Checking transcripts</span><span>✓ Measuring delivery</span><span className="working">● Applying strict score caps</span></div></section>
       )}
 
       {step === "results" && (
         <section className="results-page">
-          <div className="results-hero">
-            <div>
-              <p className="eyebrow"><span>✓</span> Practice complete</p>
-              <h1>You gave a clear picture of your plans.</h1>
-              <p>Your answers were direct and consistent. A few details could be more specific before the real interview.</p>
-            </div>
-            <div className="score-ring" style={{ "--score": `${score * 3.6}deg` } as React.CSSProperties}>
-              <div><strong>{score}%</strong><span>Practice score</span></div>
-            </div>
-          </div>
-          <div className="result-grid">
-            <article className="result-card strengths">
-              <div className="result-title"><span>✓</span><h2>What went well</h2></div>
-              <ul><li><strong>Clear purpose</strong><small>You explained why you want to travel without unnecessary detail.</small></li><li><strong>Consistent answers</strong><small>Your timing, funding, and plans supported one another.</small></li><li><strong>Calm delivery</strong><small>Your answers were concise and easy to follow.</small></li></ul>
-            </article>
-            <article className="result-card improvements">
-              <div className="result-title"><span>↗</span><h2>Needs improvement</h2></div>
-              <ul><li><strong>Be more specific about timing</strong><small>State exact travel dates or program dates when you know them.</small></li><li><strong>Explain your return plan</strong><small>Connect your job, studies, or responsibilities to what happens after the trip.</small></li><li><strong>Name your main costs</strong><small>Briefly explain the travel budget and who will cover it.</small></li></ul>
-            </article>
-          </div>
-          <div className="breakdown-card">
-            <div><h2>Score breakdown</h2><p>This measures answer quality, not your chance of receiving a visa.</p></div>
-            {[{ label: "Clarity", value: 88 }, { label: "Consistency", value: 84 }, { label: "Purpose", value: 86 }, { label: "Finances", value: 74 }, { label: "Return plans", value: 72 }].map((item) => (
-              <div className="score-row" key={item.label}><span>{item.label}</span><i><b style={{ width: `${item.value}%` }} /></i><strong>{item.value}</strong></div>
-            ))}
-          </div>
-          <div className="email-note"><span>✉</span><div><strong>Your result is ready</strong><small>In the connected version, a copy will be emailed to alex@example.com.</small></div></div>
+          <div className={`results-hero ${!result.available ? "no-score" : ""}`}><div><p className="eyebrow"><span>{result.available ? "✓" : "!"}</span> Evidence-based review</p><h1>{result.available ? (result.score >= 75 ? "A solid practice, with details still to sharpen." : result.score >= 55 ? "Your answers need more precision." : "This interview needs serious improvement.") : "No reliable score was issued."}</h1><p>{result.available ? "This result is deliberately strict. Irrelevant, very short, unclear, or unsupported answers are capped." : "Speech transcription was unavailable, so eConsul refused to invent a percentage."}</p></div><div className="score-ring" style={{ "--score": `${result.score * 3.6}deg` } as React.CSSProperties}><div><strong>{result.available ? `${result.score}%` : "—"}</strong><span>{result.available ? "Practice score" : "No evidence"}</span></div></div></div>
+          <div className="result-grid"><article className="result-card strengths"><div className="result-title"><span>✓</span><h2>What the evidence supports</h2></div><ul>{result.strengths.length ? result.strengths.map((item) => <li key={item.title}><strong>{item.title}</strong><small>{item.detail}</small></li>) : <li><strong>No positive claim without evidence</strong><small>The app will not praise answers it could not hear and analyze.</small></li>}</ul></article><article className="result-card improvements"><div className="result-title"><span>↗</span><h2>Needs improvement</h2></div><ul>{result.improvements.map((item) => <li key={item.title}><strong>{item.title}</strong><small>{item.detail}</small></li>)}</ul></article></div>
+          {result.available && <div className="breakdown-card"><div><h2>Strict score breakdown</h2><p>Delivery confidence is an approximation based on speech-recognition confidence and audible voice activity—not a judgment about your personality.</p></div>{[{ label: "Relevance", value: result.relevance }, { label: "Clarity", value: result.clarity }, { label: "Delivery", value: result.delivery }, { label: "Complete", value: result.completeness }].map((item) => <div className="score-row" key={item.label}><span>{item.label}</span><i><b style={{ width: `${item.value}%` }} /></i><strong>{item.value}</strong></div>)}</div>}
+          <div className="transcript-review"><div><h2>What the app heard</h2><p>Review this before trusting the score. A wrong transcript can produce a wrong evaluation.</p></div>{answers.map((answer, index) => <details key={answer.question}><summary><span>Q{index + 1}</span><strong>{answer.score}%</strong>{answer.transcript || "No answer detected"}</summary><div><p><b>Question:</b> {answer.question}</p><p><b>Transcript:</b> {answer.transcript || "No usable speech was detected."}</p><small>{answer.duration}s · {answer.wordCount} words · {answer.wordsPerMinute} words/min · {answer.fillerCount} filler words</small></div></details>)}</div>
+          <div className="email-note"><span>✉</span><div><strong>Your result is ready</strong><small>In the connected version, the evidence and transcript review—not a preset score—will be emailed to you.</small></div></div>
           <div className="result-actions"><button className="primary-button" onClick={restart}>Practice again <span>→</span></button><button className="secondary-button" onClick={() => window.print()}>Save this result</button></div>
-          <p className="legal-note">eConsul is an independent educational practice tool. This score is not a visa decision, approval prediction, or legal advice. Always answer truthfully.</p>
+          <p className="legal-note">eConsul is an independent educational practice tool. This score measures the captured practice answer only. It is not a visa decision, approval prediction, psychological assessment, or legal advice.</p>
         </section>
       )}
     </main>
