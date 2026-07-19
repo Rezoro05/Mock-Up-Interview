@@ -184,6 +184,11 @@ button:focus-visible, input:focus-visible { outline: 3px solid rgba(139, 197, 63
 .mic-live .mic-icon b { border-color: var(--brand-green); }
 .mic-live .mic-icon b::after { background: var(--brand-green); }
 .mic-live.muted-analysis { opacity: .72; }
+.applicant-wave-slot { height: 44px; margin-top: 8px; display: grid; place-items: center; }
+.applicant-wave { height: 42px; display: flex; align-items: center; justify-content: center; gap: 5px; padding: 7px 13px; border: 1px solid rgba(86,183,233,.45); border-radius: 999px; background: rgba(86,183,233,.12); box-shadow: 0 8px 22px rgba(43,133,179,.12); }
+.applicant-wave i { width: 5px; max-height: 28px; border-radius: 7px; background: #56b7e9; animation: applicantAudioBar .58s ease-in-out infinite alternate; }
+.applicant-wave i:nth-child(2n) { animation-delay: .12s; }
+.applicant-wave i:nth-child(3n) { animation-delay: .24s; }
 .transcript-live { width: min(100%, 660px); text-align: left; background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 16px 18px; margin-top: 12px; }
 .transcript-live span { font-size: 10px; letter-spacing: .12em; font-weight: 900; color: var(--mid-green); }
 .transcript-live p { margin: 8px 0 0; color: var(--muted); line-height: 1.5; }
@@ -203,6 +208,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid rgba(139, 197, 63
 @keyframes micPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(225,102,102,.28); } 50% { box-shadow: 0 0 0 24px rgba(225,102,102,0); } }
 @keyframes clockPulse { 50% { opacity: .35; } }
 @keyframes audioBar { to { transform: scaleY(.45); opacity: .62; } }
+@keyframes applicantAudioBar { from { transform: scaleY(.28); opacity: .55; } to { transform: scaleY(1); opacity: 1; } }
 @keyframes officerAlive { from { transform: scale(1.01) translateY(0); } to { transform: scale(1.035) translateY(-3px); } }
 @keyframes officerFramePulse { 50% { box-shadow: 0 30px 78px rgba(44,86,41,.3), 0 0 0 4px rgba(139,197,63,.1); } }
 

@@ -198,6 +198,7 @@ export default function Home() {
   const [privacyAccepted, setPrivacyAccepted] = useState(false);
   const [demoSignedIn, setDemoSignedIn] = useState(false);
   const [isQuestionSpeaking, setIsQuestionSpeaking] = useState(false);
+  const [isApplicantSpeaking, setIsApplicantSpeaking] = useState(false);
   const [answerSeconds, setAnswerSeconds] = useState(0);
   const [liveTranscript, setLiveTranscript] = useState("");
   const [answers, setAnswers] = useState<AnswerAnalysis[]>([]);
@@ -222,6 +223,8 @@ export default function Home() {
   const answerTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const answerStartedAtRef = useRef(0);
   const answerActiveRef = useRef(false);
+  const applicantSpeakingRef = useRef(false);
+  const applicantQuietFramesRef = useRef(0);
   const transcriptRef = useRef("");
   const confidenceSamplesRef = useRef<number[]>([]);
   const voiceFramesRef = useRef(0);
@@ -235,6 +238,9 @@ export default function Home() {
 
   const stopAnswerCapture = useCallback(() => {
     answerActiveRef.current = false;
+    applicantSpeakingRef.current = false;
+    applicantQuietFramesRef.current = 0;
+    setIsApplicantSpeaking(false);
     if (answerTimerRef.current) clearInterval(answerTimerRef.current);
     answerTimerRef.current = null;
     try { recognitionRef.current?.stop(); } catch { /* already stopped */ }
@@ -283,7 +289,21 @@ export default function Home() {
         }
         const rms = Math.sqrt(sum / samples.length);
         totalFramesRef.current += 1;
-        if (rms > 0.025) voiceFramesRef.current += 1;
+        if (rms > 0.025) {
+          voiceFramesRef.current += 1;
+          applicantQuietFramesRef.current = 0;
+        } else {
+          applicantQuietFramesRef.current += 1;
+        }
+        const shouldShowApplicantWave = rms > 0.025 || applicantQuietFramesRef.current < 8;
+        if (shouldShowApplicantWave !== applicantSpeakingRef.current) {
+          applicantSpeakingRef.current = shouldShowApplicantWave;
+          setIsApplicantSpeaking(shouldShowApplicantWave);
+        }
+      } else if (applicantSpeakingRef.current) {
+        applicantSpeakingRef.current = false;
+        applicantQuietFramesRef.current = 0;
+        setIsApplicantSpeaking(false);
       }
       animationFrameRef.current = requestAnimationFrame(measure);
     };
@@ -568,6 +588,7 @@ export default function Home() {
               <h1 className="question-reveal">{questions[questionIndex].prompt}</h1>
               {isQuestionSpeaking && <div className="audio-bars" aria-label={t("იკვრება კითხვის აუდიო")}>{[22, 42, 64, 34, 76, 48, 60, 28, 52].map((height, index) => <i key={index} style={{ height }} />)}</div>}
               <div className={`mic-live ${isQuestionSpeaking ? "muted-analysis" : ""}`}><span className="mic-icon" aria-hidden="true"><i /><b /></span><strong>{isQuestionSpeaking ? t("მოუსმინეთ") : t("უპასუხეთ კითხვას")}</strong></div>
+              <div className="applicant-wave-slot">{!isQuestionSpeaking && isApplicantSpeaking && <div className="applicant-wave" aria-label={t("თქვენ საუბრობთ")}>{[20, 38, 58, 30, 68, 44, 56, 26, 48].map((height, index) => <i key={index} style={{ height }} />)}</div>}</div>
               <div className="question-controls"><button className="secondary-button" disabled={isQuestionSpeaking} onClick={speakQuestion}>↻ {t("კითხვის გამეორება")}</button><button className="primary-button finish-answer" disabled={isQuestionSpeaking} onClick={finishAnswer}>{questionIndex === questions.length - 1 ? t("ინტერვიუს დასრულება") : t("შემდეგი")} <span>→</span></button></div>
             </div>
           </div>
