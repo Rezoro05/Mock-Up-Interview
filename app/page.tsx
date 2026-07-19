@@ -2,10 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ENGLISH_BY_GEORGIAN } from "./english-copy";
+import { RUSSIAN_BY_GEORGIAN } from "./russian-copy";
 
 type VisaType = "B1/B2" | "F-1" | "J-1";
 type Step = "landing" | "briefing" | "interview" | "processing" | "results";
-type InterfaceLanguage = "en" | "ka";
+type InterfaceLanguage = "en" | "ka" | "ru";
 
 type QuestionSpec = {
   prompt: string;
@@ -246,17 +247,21 @@ export default function Home() {
   const [answers, setAnswers] = useState<AnswerAnalysis[]>([]);
   const [responses, setResponses] = useState<InterviewResponse[]>([]);
   const [recognitionSupported, setRecognitionSupported] = useState(true);
-  const t = useCallback((georgian: string) => language === "en" ? (ENGLISH_BY_GEORGIAN[georgian] ?? georgian) : georgian, [language]);
+  const t = useCallback((georgian: string) => {
+    if (language === "en") return ENGLISH_BY_GEORGIAN[georgian] ?? georgian;
+    if (language === "ru") return RUSSIAN_BY_GEORGIAN[georgian] ?? georgian;
+    return georgian;
+  }, [language]);
 
   useEffect(() => {
     const savedLanguage = window.localStorage.getItem("econsul-language");
-    if (savedLanguage === "en" || savedLanguage === "ka") setLanguage(savedLanguage);
+    if (savedLanguage === "en" || savedLanguage === "ka" || savedLanguage === "ru") setLanguage(savedLanguage);
   }, []);
 
   useEffect(() => {
     window.localStorage.setItem("econsul-language", language);
     document.documentElement.lang = language;
-    document.title = language === "en" ? "eConsul | U.S. Visa Practice Interview" : "eConsul | აშშ-ის ვიზის საცდელი გასაუბრება";
+    document.title = language === "en" ? "eConsul | U.S. Visa Practice Interview" : language === "ru" ? "eConsul | Тренировка собеседования на визу США" : "eConsul | აშშ-ის ვიზის საცდელი გასაუბრება";
   }, [language]);
 
   const recorderRef = useRef<MediaRecorder | null>(null);
@@ -709,13 +714,14 @@ export default function Home() {
   }, [answers, recognitionSupported, t]);
 
   return (
-    <main className="site-shell">
+    <main className={`site-shell lang-${language}`}>
       <header className="site-header">
         <div className="header-brand"><button className="logo-button" onClick={() => setStep("landing")} aria-label={t("მთავარ გვერდზე გადასვლა")}><BrandMark /></button><span className="beta-badge">{t("ბეტა")}</span></div>
         <div className="header-right">
-          <div className="language-toggle" role="group" aria-label="Language / ენა">
+          <div className="language-toggle" role="group" aria-label="Language / ენა / Язык">
             <button className={language === "en" ? "active" : ""} onClick={() => setLanguage("en")} aria-pressed={language === "en"} title="English"><span aria-hidden="true">🇺🇸</span><small>ENG</small></button>
             <button className={language === "ka" ? "active" : ""} onClick={() => setLanguage("ka")} aria-pressed={language === "ka"} title="ქართული"><span aria-hidden="true">🇬🇪</span><small>GEO</small></button>
+            <button className={language === "ru" ? "active" : ""} onClick={() => setLanguage("ru")} aria-pressed={language === "ru"} title="Русский"><span aria-hidden="true">🇷🇺</span><small>RUS</small></button>
           </div>
           {demoSignedIn && <span className="account-chip">AM</span>}
         </div>
@@ -766,7 +772,7 @@ export default function Home() {
 
       {step === "interview" && (
         <section className="interview-page">
-          <div className="interview-meta"><strong>{questions[questionIndex].scored === false ? t("მიმდინარეობს ინტერვიუ") : language === "en" ? `Question ${answers.length + 1} of ${questions.filter((question) => question.scored !== false).length}` : `კითხვა ${answers.length + 1} ${questions.filter((question) => question.scored !== false).length}-დან`}</strong></div>
+          <div className="interview-meta"><strong>{questions[questionIndex].scored === false ? t("მიმდინარეობს ინტერვიუ") : language === "en" ? `Question ${answers.length + 1} of ${questions.filter((question) => question.scored !== false).length}` : language === "ru" ? `Вопрос ${answers.length + 1} из ${questions.filter((question) => question.scored !== false).length}` : `კითხვა ${answers.length + 1} ${questions.filter((question) => question.scored !== false).length}-დან`}</strong></div>
           <div className="answer-timeline" aria-label={t("პასუხისთვის დარჩენილი დრო")}><span style={{ width: `${Math.max(0, 100 - (answerSeconds / 180) * 100)}%` }} /></div>
           <div className="interview-room">
             <div className={`officer-panel ${isQuestionSpeaking ? "speaking" : ""}`}>

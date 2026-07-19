@@ -312,6 +312,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid rgba(139, 197, 63
   .hero-copy { width: 100%; padding: 22px 18px 18px; justify-content: flex-end; }
   .hero-copy .eyebrow { display: none; }
   .hero-copy h1 { max-width: 340px; font-size: clamp(29px, 8.2vw, 36px); line-height: 1.04; letter-spacing: -.045em; }
+  .lang-ru .hero-copy h1 { font-size: clamp(26px, 7.4vw, 32px); }
   .hero-copy > .hero-actions { margin-top: 14px; }
   .hero-actions { align-items: stretch; flex-direction: column; width: 100%; }
   .landing-hero .primary-button { width: 100%; padding: 15px 18px; }
