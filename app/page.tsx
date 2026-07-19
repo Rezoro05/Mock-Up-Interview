@@ -73,6 +73,13 @@ const interviewQuestions: Record<VisaType, QuestionSpec[]> = {
 
 const mandatoryQuestions: QuestionSpec[] = [
   {
+    prompt: "What's the purpose of your visit?",
+    criteria: [
+      ["tourism", "vacation", "visit", "business", "conference", "study", "exchange", "training", "internship"],
+      ["travel", "trip", "united states", "u.s.", "university", "program", "meeting", "family"],
+    ],
+  },
+  {
     prompt: "Where will you stay in the United States?",
     criteria: [
       ["hotel", "hostel", "apartment", "campus", "dorm", "family", "friend", "relative", "housing", "accommodation"],
@@ -98,7 +105,7 @@ function shuffled<T>(items: T[]) {
 }
 
 function selectInterviewQuestions(visa: VisaType) {
-  const randomVisaQuestions = shuffled(interviewQuestions[visa]).slice(0, 3);
+  const randomVisaQuestions = shuffled(interviewQuestions[visa]).slice(0, 2);
   return shuffled([...mandatoryQuestions, ...randomVisaQuestions]);
 }
 
@@ -201,8 +208,10 @@ export default function Home() {
   const audioContextRef = useRef<AudioContext | null>(null);
   const animationFrameRef = useRef<number | null>(null);
   const speechVoicesRef = useRef<SpeechSynthesisVoice[]>([]);
+  const introductionPendingRef = useRef(true);
+  const autoFinishRef = useRef<() => void>(() => {});
 
-  const [questions, setQuestions] = useState<QuestionSpec[]>(() => [...mandatoryQuestions, ...interviewQuestions["B1/B2"].slice(0, 3)]);
+  const [questions, setQuestions] = useState<QuestionSpec[]>(() => [...mandatoryQuestions, ...interviewQuestions["B1/B2"].slice(0, 2)]);
 
   const stopAnswerCapture = useCallback(() => {
     answerActiveRef.current = false;
@@ -330,17 +339,20 @@ export default function Home() {
     setAnswerSeconds(0);
     setIsQuestionSpeaking(true);
     window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(questions[questionIndex].prompt);
+    const opening = introductionPendingRef.current ? "Hello. How are you today? Let's begin. " : "";
+    introductionPendingRef.current = false;
+    const utterance = new SpeechSynthesisUtterance(`${opening}${questions[questionIndex].prompt}`);
     utterance.lang = "en-US";
     const availableVoices = window.speechSynthesis.getVoices();
     const voices = availableVoices.length ? availableVoices : speechVoicesRef.current;
-    const preferredMaleNames = ["alex", "daniel", "david", "aaron", "arthur", "fred", "guy", "male"];
-    const maleVoice = voices.find((voice) => voice.lang.toLowerCase().startsWith("en") && preferredMaleNames.some((name) => voice.name.toLowerCase().includes(name)))
+    const naturalVoiceNames = ["premium", "enhanced", "natural", "neural", "aaron", "daniel", "alex", "david", "arthur"];
+    const maleVoice = voices.find((voice) => voice.lang.toLowerCase().startsWith("en-us") && naturalVoiceNames.some((name) => voice.name.toLowerCase().includes(name)))
       ?? voices.find((voice) => voice.lang.toLowerCase().startsWith("en-us"))
       ?? voices.find((voice) => voice.lang.toLowerCase().startsWith("en"));
     if (maleVoice) utterance.voice = maleVoice;
-    utterance.rate = 0.9;
-    utterance.pitch = 0.78;
+    utterance.rate = 0.96;
+    utterance.pitch = 0.94;
+    utterance.volume = 1;
     utterance.onend = startAnswerCapture;
     utterance.onerror = startAnswerCapture;
     window.speechSynthesis.speak(utterance);
@@ -361,6 +373,7 @@ export default function Home() {
       recorderRef.current = recorder;
       recorder.start();
       startVoiceActivityAnalysis(stream);
+      introductionPendingRef.current = true;
       setQuestions(selectInterviewQuestions(visa));
       setAnswers([]);
       setQuestionIndex(0);
@@ -393,6 +406,13 @@ export default function Home() {
     setStep("processing");
     window.setTimeout(() => setStep("results"), 1600);
   };
+
+  autoFinishRef.current = finishAnswer;
+
+  useEffect(() => {
+    if (step !== "interview" || isQuestionSpeaking || !answerActiveRef.current || answerSeconds < 180) return;
+    autoFinishRef.current();
+  }, [answerSeconds, isQuestionSpeaking, step]);
 
   const endPractice = () => {
     releaseMicrophone();
@@ -481,7 +501,7 @@ export default function Home() {
 
       {step === "briefing" && (
         <section className="briefing-page">
-          <div className="briefing-visual"><img src="/embassy-realistic.png" alt="Visa applicant preparing to enter a United States consulate" /><span>YOUR INTERVIEW IS ABOUT TO BEGIN</span></div>
+          <div className="briefing-visual"><img src="/embassy-security-only.png" alt="United States consulate entrance with security" /><span>YOUR INTERVIEW IS ABOUT TO BEGIN</span></div>
           <div className="briefing-copy">
             <p className="eyebrow"><span>02</span> Final preparation</p>
             <h1>Step into the interview prepared.</h1>
@@ -489,7 +509,7 @@ export default function Home() {
             <ol className="briefing-list">
               <li><b>1</b><div><strong>The officer speaks first</strong><span>Listen to the full question. Replay it once if needed.</span></div></li>
               <li><b>2</b><div><strong>You answer by voice</strong><span>The microphone and interview timer remain on for the entire session.</span></div></li>
-              <li><b>3</b><div><strong>Reveal text only when necessary</strong><span>If you still do not understand, use “Show question.”</span></div></li>
+              <li><b>3</b><div><strong>Three minutes per answer</strong><span>At the limit, the officer automatically moves to the next question.</span></div></li>
               <li><b>4</b><div><strong>Expect a strict review</strong><span>Short, irrelevant, or unclear answers lose points. No answer receives zero.</span></div></li>
             </ol>
             <div className="briefing-confirmation">
@@ -510,14 +530,14 @@ export default function Home() {
           <div className="main-progress"><span style={{ width: `${((questionIndex + 1) / questions.length) * 100}%` }} /></div>
           <div className="interview-room">
             <div className={`officer-panel ${isQuestionSpeaking ? "speaking" : ""}`}>
-              <img src="/consular-officer-realistic.png" alt="Consular officer conducting the mock interview" />
+              <img src="/consular-officer-solo.png" alt="Consular officer conducting the mock interview" />
               <div className="officer-status"><span>●</span><strong>{isQuestionSpeaking ? "Speaking" : "Listening"}</strong></div>
               {isQuestionSpeaking && <div className="portrait-wave" aria-hidden="true">{[18, 34, 52, 30, 62, 42, 24].map((height, index) => <i key={index} style={{ height }} />)}</div>}
             </div>
             <div className="question-stage">
               <h1 className="question-reveal">{questions[questionIndex].prompt}</h1>
               {isQuestionSpeaking && <div className="audio-bars" aria-label="Question audio is playing">{[22, 42, 64, 34, 76, 48, 60, 28, 52].map((height, index) => <i key={index} style={{ height }} />)}</div>}
-              <div className={`mic-live ${isQuestionSpeaking ? "muted-analysis" : ""}`}><span className="mic-icon" aria-hidden="true"><i /><b /></span><strong>{isQuestionSpeaking ? "Listen" : `Your answer · ${answerSeconds}s`}</strong></div>
+              <div className={`mic-live ${isQuestionSpeaking ? "muted-analysis" : ""}`}><span className="mic-icon" aria-hidden="true"><i /><b /></span><strong>{isQuestionSpeaking ? "Listen" : `Your answer · ${formatTime(answerSeconds)} / 03:00`}</strong></div>
               <div className="question-controls"><button className="secondary-button" disabled={isQuestionSpeaking} onClick={speakQuestion}>↻ Hear again</button><button className="primary-button finish-answer" disabled={isQuestionSpeaking} onClick={finishAnswer}>{questionIndex === questions.length - 1 ? "Finish interview" : "Finish answer"} <span>→</span></button></div>
             </div>
           </div>
