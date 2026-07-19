@@ -591,7 +591,7 @@ export default function Home() {
               <img className="hero-scene" src="/hero-realistic.png" alt={t("ვიზის მაძიებელი ესაუბრება კონსულს შეერთებული შტატების დროშის გვერდით")} />
               <div className="hero-copy">
                 <p className="eyebrow"><span>●</span> {t("აშშ-ის ვიზის საცდელი გასაუბრება ვირტუალურ კონსულ ოფიცერთან")}</p>
-                <h1>{t("მზად ხარ კონსულ ოფიცერთან ინტერვიუსთვის?")}</h1>
+                <h1>{t("მზად ხარ კონსულ ოფიცერთან გასაუბრებისთვის?")}</h1>
                 <div className="mobile-hero-message">
                   <strong>{t("გაიარეთ ყველაზე მნიშვნელოვანი სამოგზაურო ინტერვიუს პრაქტიკა.")}</strong>
                   <span>{t("დაიწყეთ იმიტირებული ინტერვიუ აშშ-ის eConsul-თან")}</span>
