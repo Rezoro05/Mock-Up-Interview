@@ -274,6 +274,10 @@ export default function Home() {
   const audioContextRef = useRef<AudioContext | null>(null);
   const animationFrameRef = useRef<number | null>(null);
   const speechVoicesRef = useRef<SpeechSynthesisVoice[]>([]);
+  const speechUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const speechStartWatchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const speechEndWatchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const speechRunRef = useRef(0);
   const autoFinishRef = useRef<() => void>(() => {});
 
   const [questions, setQuestions] = useState<QuestionSpec[]>(() => selectInterviewQuestions("B1/B2"));
@@ -291,7 +295,17 @@ export default function Home() {
     recognitionRef.current = null;
   }, []);
 
+  const clearSpeechWatchdogs = useCallback(() => {
+    if (speechStartWatchdogRef.current) clearTimeout(speechStartWatchdogRef.current);
+    if (speechEndWatchdogRef.current) clearTimeout(speechEndWatchdogRef.current);
+    speechStartWatchdogRef.current = null;
+    speechEndWatchdogRef.current = null;
+  }, []);
+
   const releaseMicrophone = useCallback(() => {
+    speechRunRef.current += 1;
+    clearSpeechWatchdogs();
+    speechUtteranceRef.current = null;
     stopAnswerCapture();
     window.speechSynthesis?.cancel();
     if (recorderRef.current?.state === "recording") recorderRef.current.stop();
@@ -302,7 +316,7 @@ export default function Home() {
     animationFrameRef.current = null;
     void audioContextRef.current?.close();
     audioContextRef.current = null;
-  }, [stopAnswerCapture]);
+  }, [clearSpeechWatchdogs, stopAnswerCapture]);
 
   useEffect(() => () => releaseMicrophone(), [releaseMicrophone]);
 
@@ -428,10 +442,21 @@ export default function Home() {
     setLiveTranscript("");
     setAnswerSeconds(0);
     setIsQuestionSpeaking(true);
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(questions[questionIndex].prompt);
+    clearSpeechWatchdogs();
+    const synthesis = window.speechSynthesis;
+    if (!synthesis || typeof window.SpeechSynthesisUtterance === "undefined") {
+      startAnswerCapture();
+      return;
+    }
+
+    const prompt = questions[questionIndex].prompt;
+    const runId = speechRunRef.current + 1;
+    speechRunRef.current = runId;
+    let playbackStarted = false;
+    let playbackSettled = false;
+    const utterance = new SpeechSynthesisUtterance(prompt);
     utterance.lang = "en-US";
-    const availableVoices = window.speechSynthesis.getVoices();
+    const availableVoices = synthesis.getVoices();
     const voices = availableVoices.length ? availableVoices : speechVoicesRef.current;
     const maleVoiceNames = ["microsoft guy", "microsoft davis", "microsoft christopher", "microsoft eric", "google uk english male", "aaron", "daniel", "alex", "david", "eddy", "evan", "nathan", "reed", "fred", "rishi", "rocko"];
     const femaleVoiceNames = ["samantha", "victoria", "zira", "aria", "jenny", "ava", "allison", "susan", "karen", "moira", "tessa", "veena", "fiona"];
@@ -448,10 +473,52 @@ export default function Home() {
     utterance.rate = 0.92;
     utterance.pitch = 0.88;
     utterance.volume = 1;
-    utterance.onend = startAnswerCapture;
-    utterance.onerror = startAnswerCapture;
-    window.speechSynthesis.speak(utterance);
-  }, [questionIndex, questions, startAnswerCapture, step, stopAnswerCapture]);
+
+    const finishPlayback = () => {
+      if (playbackSettled || speechRunRef.current !== runId) return;
+      playbackSettled = true;
+      clearSpeechWatchdogs();
+      speechUtteranceRef.current = null;
+      startAnswerCapture();
+    };
+    const markPlaybackStarted = () => {
+      if (playbackStarted || playbackSettled || speechRunRef.current !== runId) return;
+      playbackStarted = true;
+      if (speechStartWatchdogRef.current) clearTimeout(speechStartWatchdogRef.current);
+      speechStartWatchdogRef.current = null;
+      const expectedDuration = Math.max(8000, Math.min(22000, prompt.split(/\s+/).length * 760));
+      speechEndWatchdogRef.current = window.setTimeout(() => {
+        synthesis.cancel();
+        finishPlayback();
+      }, expectedDuration);
+    };
+
+    utterance.onstart = markPlaybackStarted;
+    utterance.onboundary = markPlaybackStarted;
+    utterance.onresume = markPlaybackStarted;
+    utterance.onend = finishPlayback;
+    utterance.onerror = finishPlayback;
+    utterance.onpause = () => synthesis.resume();
+    speechUtteranceRef.current = utterance;
+
+    const play = () => {
+      if (playbackSettled || speechRunRef.current !== runId) return;
+      synthesis.resume();
+      synthesis.speak(utterance);
+      speechStartWatchdogRef.current = window.setTimeout(() => {
+        if (playbackStarted || playbackSettled || speechRunRef.current !== runId) return;
+        synthesis.cancel();
+        finishPlayback();
+      }, 3000);
+    };
+
+    if (synthesis.speaking || synthesis.pending) {
+      synthesis.cancel();
+      window.setTimeout(play, 90);
+    } else {
+      play();
+    }
+  }, [clearSpeechWatchdogs, questionIndex, questions, startAnswerCapture, step, stopAnswerCapture]);
 
   useEffect(() => {
     if (step !== "interview") return;
@@ -592,10 +659,6 @@ export default function Home() {
               <div className="hero-copy">
                 <p className="eyebrow"><span>●</span> {t("აშშ-ის ვიზის საცდელი გასაუბრება ვირტუალურ კონსულ ოფიცერთან")}</p>
                 <h1>{t("მზად ხარ კონსულ ოფიცერთან გასაუბრებისთვის?")}</h1>
-                <div className="mobile-hero-message">
-                  <strong>{t("გაიარეთ ყველაზე მნიშვნელოვანი სამოგზაურო ინტერვიუს პრაქტიკა.")}</strong>
-                  <span>{t("დაიწყეთ იმიტირებული ინტერვიუ აშშ-ის eConsul-თან")}</span>
-                </div>
                 <div className="hero-actions"><button className="primary-button" onClick={() => setStep("briefing")}>{t("გასაუბრების დაწყება")} <span>→</span></button></div>
               </div>
               <div className="hero-scene-caption"><span className="live-dot" /><small>{t("მოუსმინეთ, უპასუხეთ, გააგრძელეთ.")}</small></div>
