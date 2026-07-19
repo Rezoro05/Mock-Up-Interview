@@ -512,7 +512,7 @@ export default function Home() {
           <div className="hero-copy">
             <p className="eyebrow"><span>●</span> {t("აშშ-ის ვიზის საცდელი გასაუბრება ვირტუალურ კონსულ ოფიცერთან")}</p>
             <h1>{t("მზად ხარ კონსულ ოფიცერთან ინტერვიუსთვის?")}</h1>
-            <div className="hero-actions"><button className="primary-button" onClick={() => setStep("briefing")}>{t("გასაუბრების დაწყება")} <span>→</span></button><button className="text-button" onClick={() => document.getElementById("how")?.scrollIntoView({ behavior: "smooth" })}>{t("ნახეთ, როგორ მუშაობს")}</button></div>
+            <div className="hero-actions"><button className="primary-button" onClick={() => setStep("briefing")}>{t("გასაუბრების დაწყება")} <span>→</span></button></div>
           </div>
           <div className="hero-visual" aria-label={t("პრაქტიკული ინტერვიუს წინასწარი ნახვა")}>
             <img className="hero-scene" src="/hero-realistic.png" alt={t("ვიზის მაძიებელი ესაუბრება კონსულს შეერთებული შტატების დროშის გვერდით")} />
@@ -522,7 +522,7 @@ export default function Home() {
             </div>
             <div className="hero-scene-caption"><span className="live-dot" /><small>{t("მოუსმინეთ, უპასუხეთ, გააგრძელეთ.")}</small></div>
           </div>
-          <section className="how-section" id="how"><p className="section-kicker">{t("როგორ მუშაობს")}</p><h2>{t("მომზადების მარტივი მეთოდი")}</h2><div className="steps-grid"><article><b>01</b><h3>{t("ჯერ მოუსმინეთ")}</h3><p>{t("ოფიცერი თითოეულ კითხვას ხმამაღლა სვამს. თავიდან მოუსმინეთ ან ტექსტი გამოაჩინეთ მხოლოდ საჭიროების შემთხვევაში.")}</p></article><article><b>02</b><h3>{t("დარჩით ინტერვიუში")}</h3><p>{t("ტაიმერი და მიკროფონი აგრძელებს მუშაობას მთელი სესიის განმავლობაში.")}</p></article><article><b>03</b><h3>{t("მიიღეთ მკაცრი უკუკავშირი")}</h3><p>{t("თქვენი შედეგი იყენებს მხოლოდ ჩაწერილ საუბარს, შესაბამისობას, ტემპს, პარაზიტ სიტყვებს და გადმოცემის მტკიცებულებას.")}</p></article></div></section>
+          <section className="how-section" id="how"><p className="section-kicker">{t("როგორ მუშაობს")}</p><h2>{t("მომზადების მარტივი მეთოდი")}</h2><div className="steps-grid"><article><b>01</b><h3>{t("ჯერ მოუსმინეთ")}</h3><p>{t("ოფიცერი თითოეულ კითხვას ხმამაღლა სვამს. თუ კითხვა ვერ გაიგეთ, შეგიძლიათ ღილაკზე თითის დაჭერით ხელახლა მოუსმინოთ კითხვას. მიეცით წვდომა თქვენს მიკროფონს, რათა მოახდინოთ მიკროფონით კომუნიკაცია.")}</p></article><article><b>02</b><h3>{t("დარჩით ინტერვიუში")}</h3><p>{t("ბოლომდე უპასუხეთ ყველა კითხვას. ინტერვიუს მსვლელობისას მიკროფონი აგრძელებს მუშაობას მთელი სესიის განმავლობაში.")}</p></article><article><b>03</b><h3>{t("მიიღეთ მკაცრი უკუკავშირი")}</h3><p>{t("თქვენი შედეგი დაფუძნებულია მხოლოდ ჩაწერილ საუბარზე, შესაბამისობაზე, ტემპზე, სიტყვებზე და მთლიან კომუნიკაციაზე.")}</p></article></div></section>
           <footer className="site-footer"><BrandMark /><p>{t("დამოუკიდებელი პრაქტიკული ინსტრუმენტი. არ არის დაკავშირებული აშშ-ის მთავრობასთან. შედეგები არ პროგნოზირებს ვიზის გადაწყვეტილებას.")}</p></footer>
         </section>
       )}
