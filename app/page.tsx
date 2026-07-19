@@ -60,7 +60,7 @@ const interviewQuestions: Record<VisaType, QuestionSpec[]> = {
     { prompt: "Have you traveled outside your home country before?", criteria: [["yes", "have traveled", "visited", "went", "no", "never"], ["year", "last", "before", "country", "europe", "asia", "turkey", "georgia", "armenia", "azerbaijan"]] },
     { prompt: "Which places will you visit, and how long will you stay?", criteria: [["day", "week", "month", "date"], ["new york", "california", "florida", "washington", "boston", "chicago", "hotel", "city", "state"]] },
     { prompt: "Who will pay for your trip?", criteria: [["myself", "I will", "employer", "company", "parents", "family", "sponsor"], ["salary", "savings", "budget", "cost", "pay"]] },
-    { prompt: "Tell me about your current job and a normal workday.", criteria: [["work", "job", "employed", "company", "business"], ["manage", "design", "teach", "develop", "meet", "client", "responsible", "daily"]] },
+    { prompt: "Are you traveling alone or with someone?", criteria: [["alone", "by myself", "with", "together"], ["wife", "husband", "spouse", "partner", "friend", "family", "colleague", "group"]] },
     { prompt: "What plans and responsibilities will bring you back home?", criteria: [["return", "back", "home"], ["job", "family", "children", "business", "study", "property", "responsibility", "project"]] },
   ],
   "F-1": [
@@ -91,6 +91,7 @@ const mandatoryQuestions: QuestionSpec[] = [
     criteria: [
       ["tourism", "vacation", "visit", "business", "conference", "study", "exchange", "training", "internship"],
       ["travel", "trip", "united states", "u.s.", "university", "program", "meeting", "family"],
+      ["new york", "california", "florida", "washington", "conference", "company", "client", "course", "degree", "relative", "friend", "week", "month", "date"],
     ],
   },
   {
@@ -133,6 +134,7 @@ function inferVisaType(transcript: string): VisaType {
 
 const fillerPattern = /\b(um+|uh+|erm+|like|you know|basically|actually|sort of|kind of)\b/gi;
 const evasivePattern = /\b(i do not know|i don't know|not sure|maybe|probably|i guess|whatever)\b/i;
+const unprofessionalPattern = /\b(i told you|as i said|like i said|i already said|obviously|whatever|none of your business|why are you asking|you should know)\b/i;
 
 function clamp(value: number, minimum = 0, maximum = 100) {
   return Math.min(maximum, Math.max(minimum, value));
@@ -173,18 +175,40 @@ function analyzeAnswer(question: QuestionSpec, transcript: string, duration: num
   else if (wordsPerMinute < 85 || wordsPerMinute > 175) paceQuality = 55;
 
   const fillerQuality = fillerCount === 0 ? 100 : fillerCount === 1 ? 78 : fillerCount <= 3 ? 52 : 18;
-  const clarity = Math.round(lengthQuality * 0.4 + paceQuality * 0.35 + fillerQuality * 0.25);
+  let clarity = Math.round(lengthQuality * 0.4 + paceQuality * 0.35 + fillerQuality * 0.25);
   const recognitionConfidence = confidence === null || confidence <= 0 ? 35 : confidence * 100;
-  const delivery = Math.round(clamp(recognitionConfidence * 0.65 + Math.min(100, voiceRatio * 180) * 0.35));
-  const completeness = Math.round(lengthQuality * 0.45 + relevance * 0.55);
+  let delivery = Math.round(clamp(recognitionConfidence * 0.65 + Math.min(100, voiceRatio * 180) * 0.35));
+  let completeness = Math.round(lengthQuality * 0.45 + relevance * 0.55);
+  const isUnprofessional = unprofessionalPattern.test(lower);
+  const isGenericPurpose = question.prompt === mandatoryQuestions[0].prompt && matchedCriteria < 2;
+
+  if (words.length < 6) {
+    clarity = Math.min(clarity, 10);
+    completeness = Math.min(completeness, 10);
+  } else if (words.length < 10) {
+    clarity = Math.min(clarity, matchedCriteria === question.criteria.length ? 45 : 28);
+    completeness = Math.min(completeness, matchedCriteria === question.criteria.length ? 60 : 30);
+  } else if (words.length < 15) {
+    clarity = Math.min(clarity, matchedCriteria === question.criteria.length ? 65 : 48);
+    completeness = Math.min(completeness, matchedCriteria === question.criteria.length ? 75 : 50);
+  }
+  if (isGenericPurpose) completeness = Math.min(completeness, 20);
+  if (isUnprofessional) {
+    clarity = Math.min(clarity, 45);
+    delivery = Math.min(delivery, 20);
+  }
 
   let score = Math.round(relevance * 0.55 + clarity * 0.15 + delivery * 0.1 + completeness * 0.2);
-  if (!cleanTranscript) score = 0;
-  else if (words.length < 6) score = Math.min(score, 15);
-  else if (evasivePattern.test(lower)) score = Math.min(score, 20);
-  else if (relevance === 0) score = Math.min(score, 20);
-  else if (relevance < 50) score = Math.min(score, 40);
-  else if (matchedCriteria < question.criteria.length) score = Math.min(score, 68);
+  if (words.length < 6) score = Math.min(score, 8);
+  else if (words.length < 10) score = Math.min(score, matchedCriteria === question.criteria.length ? 40 : 22);
+  else if (words.length < 15) score = Math.min(score, matchedCriteria === question.criteria.length ? 62 : 38);
+  if (evasivePattern.test(lower)) score = Math.min(score, 15);
+  if (isUnprofessional) score = Math.min(score, 12);
+  if (relevance === 0) score = Math.min(score, 10);
+  else if (relevance < 50) score = Math.min(score, 28);
+  else if (relevance < 75) score = Math.min(score, 45);
+  if (matchedCriteria < question.criteria.length) score = Math.min(score, 58);
+  if (isGenericPurpose) score = Math.min(score, 15);
 
   return {
     question: question.prompt,
@@ -323,7 +347,7 @@ export default function Home() {
         if (!applicantSpeakingRef.current && loudFramesRef.current >= 2) {
           applicantSpeakingRef.current = true;
           setIsApplicantSpeaking(true);
-        } else if (applicantSpeakingRef.current && quietFramesRef.current >= 10) {
+        } else if (applicantSpeakingRef.current && quietFramesRef.current >= 18) {
           applicantSpeakingRef.current = false;
           setIsApplicantSpeaking(false);
         }
@@ -536,6 +560,7 @@ export default function Home() {
     if (!strengths.length) strengths.push({ title: t("ინტერვიუ დასრულებულია"), detail: t("თქვენ ბოლომდე დარჩით ინტერვიუზე. ახლა ფოკუსირდით იმაზე, რომ თითოეული პასუხი იყოს კონკრეტული და პირდაპირი.") });
 
     const improvements: Array<{ title: string; detail: string }> = [];
+    if (answers.some((answer) => unprofessionalPattern.test(answer.transcript))) improvements.push({ title: t("შეინარჩუნეთ პროფესიული ტონი"), detail: t("კონსულ ოფიცერთან მოერიდეთ მოუთმენელ ან გამომწვევ ფრაზებს, როგორიცაა „უკვე გითხარით“. უპასუხეთ მშვიდად და პირდაპირ, მაშინაც კი, თუ კითხვა განმეორებით გეჩვენებათ.") });
     if (relevance < 78) improvements.push({ title: t("ზუსტად უპასუხეთ კითხვას"), detail: t("კონსულმა შეიძლება ეჭვქვეშ დააყენოს პასუხები, რომლებიც არ შეიცავს სახელებს, თარიღებს, ადგილებს, ხარჯებს, პასუხისმგებლობებს ან დაბრუნების გეგმებს.") });
     if (completeness < 75) improvements.push({ title: t("დაასაბუთეთ ყოველი პასუხი"), detail: t("გაეცით ერთი პირდაპირი პასუხი და დაასახელეთ მინიმუმ ერთი კონკრეტული დამადასტურებელი ფაქტი. ბუნდოვანი ან დაუსაბუთებელი მტკიცებები ფასდება სიფრთხილით.") });
     if (clarity < 75) improvements.push({ title: t("გააუმჯობესეთ ტემპი და სტრუქტურა"), detail: t("შეინარჩუნეთ პასუხები დაახლოებით 10–45 წამის ფარგლებში და გამოიყენეთ მარტივი წინადადებები გრძელი განმარტებების ნაცვლად.") });
@@ -636,7 +661,7 @@ export default function Home() {
         <section className="results-page">
           <div className={`results-hero ${!result.available ? "no-score" : result.score < 40 ? "result-red" : result.score < 80 ? "result-yellow" : "result-green"}`}><div><p className="eyebrow"><span>{result.available ? "✓" : "!"}</span> {t("გამოცდილებაზე დაფუძნებული შეფასება")}</p><h1>{result.available ? (result.score >= 80 ? t("მყარი პრაქტიკა, თუმცა დეტალები ჯერ კიდევ დასახვეწია.") : result.score >= 40 ? t("თქვენს პასუხებს მეტი სიზუსტე სჭირდება.") : t("ეს ინტერვიუ სერიოზულ გაუმჯობესებას საჭიროებს.")) : t("სანდო ქულა არ გაცემულა.")}</h1><p>{result.available ? t("პასუხები არის შეუსაბამო, ძალიან მოკლე ან ბუნდოვანი. თავის არიდებისას ან დაუსაბუთებელი პასუხების გაცემით ქულები ნულდება.") : t("საუბრის ტრანსკრიფცია მიუწვდომელი იყო, ამიტომ eConsul-მა უარი თქვა პროცენტის გამოგონებაზე.")}</p></div><div className="score-ring" style={{ "--score": `${result.score * 3.6}deg` } as React.CSSProperties}><div><strong>{result.available ? `${result.score}%` : "—"}</strong><span>{result.available ? t("პრაქტიკის ქულა") : t("არ არის მტკიცებულება")}</span></div></div></div>
           <div className="result-grid"><article className="result-card strengths"><div className="result-title"><span>✓</span><h2>{t("შედეგები")}</h2></div><ul>{result.strengths.length ? result.strengths.map((item) => <li key={item.title}><strong>{item.title}</strong><small>{item.detail}</small></li>) : <li><strong>{t("არანაირი დადებითი მტკიცება მტკიცებულების გარეშე")}</strong><small>{t("აპლიკაცია არ შეაქებს პასუხებს, რომელთა მოსმენაც და გაანალიზებაც ვერ შეძლო.")}</small></li>}</ul></article><article className="result-card improvements"><div className="result-title"><span>↗</span><h2>{t("საჭიროებს გაუმჯობესებას")}</h2></div><ul>{result.improvements.map((item) => <li key={item.title}><strong>{item.title}</strong><small>{item.detail}</small></li>)}</ul></article></div>
-          {result.available && <div className="breakdown-card"><div><h2>{t("ქულების გადანაწილება")}</h2><p>{t("გადმოცემის სანდოობა არის მიახლოებითი მაჩვენებელი, რომელიც ეფუძნება მეტყველების ამოცნობის სანდოობას და ხმის აქტივობას — და არა თქვენი პიროვნების შეფასებას.")}</p></div>{[{ label: t("რელევანტურობა"), value: result.relevance }, { label: t("სიცხადე"), value: result.clarity }, { label: t("გადმოცემა"), value: result.delivery }, { label: t("დასრულებულია"), value: result.completeness }].map((item) => <div className="score-row" key={item.label}><span>{item.label}</span><i><b style={{ width: `${item.value}%` }} /></i><strong>{item.value}</strong></div>)}</div>}
+          {result.available && <div className="breakdown-card"><div><h2>{t("ქულების გადანაწილება")}</h2><p>{t("გადმოცემის შეფასება ეფუძნება მეტყველების ამოცნობის სანდოობას, ხმის აქტივობას და პასუხის პროფესიულ ტონს — და არა თქვენი პიროვნების შეფასებას.")}</p></div>{[{ label: t("რელევანტურობა"), value: result.relevance }, { label: t("სიცხადე"), value: result.clarity }, { label: t("გადმოცემა"), value: result.delivery }, { label: t("დასრულებულია"), value: result.completeness }].map((item) => <div className="score-row" key={item.label}><span>{item.label}</span><i><b style={{ width: `${item.value}%` }} /></i><strong>{item.value}</strong></div>)}</div>}
           <div className="transcript-review"><div><h2>{t("თქვენი ინტერვიუ: კითხვები და პასუხები")}</h2><p>{t("გადახედეთ ზუსტად რა გკითხეს და რა გაიგონა აპლიკაციამ თითოეული პასუხიდან.")}</p></div><div className="qa-review-list">{responses.map((response, index) => <article key={`${response.question}-${index}`}><span>Q{index + 1}</span><div><strong>{response.question}</strong><p>{response.answer || t("ვერ მოხერხდა საუბრის აღქმა.")}</p></div></article>)}</div></div>
           <div className="result-actions"><a className="primary-button consultation-button" href={`https://wa.me/995596114488?text=${encodeURIComponent(t("გამარჯობა eConsul, მსურს კონსულტაციის დაჯავშნა აშშ-ის ვიზის ინტერვიუსთვის ექსპერტთან მოსამზადებლად."))}`} target="_blank" rel="noopener noreferrer">{t("მოემზადე ინტერვიუსთვის პროფესიონალის დახმარებით. დაგვიკავშირდი WhatsApp-ზე")} <span>→</span></a><button className="secondary-button" onClick={restart}>{t("სცადე ხელახლა")}</button></div>
           <p className="legal-note">{t("eConsul არის დამოუკიდებელი საგანმანათლებლო პრაქტიკული ინსტრუმენტი. ეს ქულა ზომავს მხოლოდ ჩაწერილ პრაქტიკულ პასუხს. ეს არ არის ვიზის გადაწყვეტილება, დამტკიცების პროგნოზი, ფსიქოლოგიური შეფასება ან იურიდიული რჩევა.")}</p>

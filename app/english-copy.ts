@@ -1,4 +1,6 @@
 export const ENGLISH_BY_GEORGIAN: Record<string, string> = {
+  "შეინარჩუნეთ პროფესიული ტონი": "Keep a professional tone",
+  "კონსულ ოფიცერთან მოერიდეთ მოუთმენელ ან გამომწვევ ფრაზებს, როგორიცაა „უკვე გითხარით“. უპასუხეთ მშვიდად და პირდაპირ, მაშინაც კი, თუ კითხვა განმეორებით გეჩვენებათ.": "Avoid impatient or confrontational phrases such as “I told you” with a consular officer. Answer calmly and directly, even if a question feels repetitive.",
   "თქვენი პასუხი იწერება": "Your answer is being recorded",
   "ოფიცერი თითოეულ კითხვას ხმამაღლა სვამს. თუ კითხვა ვერ გაიგეთ, შეგიძლიათ ღილაკზე თითის დაჭერით ხელახლა მოუსმინოთ კითხვას. მიეცით წვდომა თქვენს მიკროფონს, რათა მოახდინოთ მიკროფონით კომუნიკაცია.": "The officer asks each question aloud. If you do not understand a question, press the button to hear it again. Allow microphone access so you can communicate by voice.",
   "ბოლომდე უპასუხეთ ყველა კითხვას. ინტერვიუს მსვლელობისას მიკროფონი აგრძელებს მუშაობას მთელი სესიის განმავლობაში.": "Answer every question fully. The microphone remains active throughout the interview.",
@@ -51,7 +53,7 @@ export const ENGLISH_BY_GEORGIAN: Record<string, string> = {
   "გადახედეთ ზუსტად რა გკითხეს და რა გაიგონა აპლიკაციამ თითოეული პასუხიდან.": "Review exactly what was asked and what the app heard from each response.", // results.qa_explanation
   "გადმოცემა": "Delivery", // results.metric_delivery
   "გადმოცემის გაზომვა": "Measuring delivery", // processing.measuring_delivery
-  "გადმოცემის სანდოობა არის მიახლოებითი მაჩვენებელი, რომელიც ეფუძნება მეტყველების ამოცნობის სანდოობას და ხმის აქტივობას — და არა თქვენი პიროვნების შეფასებას.": "Delivery confidence is an approximation based on speech-recognition confidence and audible voice activity—not a judgment about your personality.", // results.breakdown_explanation
+  "გადმოცემის შეფასება ეფუძნება მეტყველების ამოცნობის სანდოობას, ხმის აქტივობას და პასუხის პროფესიულ ტონს — და არა თქვენი პიროვნების შეფასებას.": "Delivery is based on speech-recognition confidence, audible voice activity, and the professional tone of the captured answer—not a judgment about your personality.", // results.breakdown_explanation
   "გაეცით ერთი პირდაპირი პასუხი და დაასახელეთ მინიმუმ ერთი კონკრეტული დამადასტურებელი ფაქტი. ბუნდოვანი ან დაუსაბუთებელი მტკიცებები ფასდება სიფრთხილით.": "Give one direct answer and at least one concrete supporting fact. Vague or unsupported claims are scored cautiously.", // results.improvement_support_text
   "გაიარეთ აშშ-ის ვიზის რეალისტური ინტერვიუს პრაქტიკა ხმით და მიიღეთ მკაფიო უკუკავშირი ხუთ წუთზე ნაკლებ დროში.": "Practice a realistic U.S. visa interview by voice and get clear feedback in under five minutes.", // metadata.description
   "გაიარეთ ყველაზე მნიშვნელოვანი სამოგზაურო ინტერვიუს პრაქტიკა.": "Practice the most important travel interview.", // home.mobile_image_headline
