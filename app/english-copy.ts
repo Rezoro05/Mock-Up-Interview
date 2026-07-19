@@ -64,7 +64,7 @@ export const ENGLISH_BY_GEORGIAN: Record<string, string> = {
   "დაიწყეთ იმიტირებული ინტერვიუ აშშ-ის eConsul-თან": "Start mock-up interview with eConsul of US", // home.mobile_image_supporting_text
   "დაკავშირებულ ვერსიაში, მტკიცებულება და ტრანსკრიპტის მიმოხილვა — და არა წინასწარ განსაზღვრული ქულა — გამოგიგზავნებათ ელფოსტით.": "In the connected version, the evidence and transcript review—not a preset score—will be emailed to you.", // results.ready_text
   "დამოუკიდებელი პრაქტიკული ინსტრუმენტი. არ არის დაკავშირებული აშშ-ის მთავრობასთან. შედეგები არ პროგნოზირებს ვიზის გადაწყვეტილებას.": "Independent practice tool. Not affiliated with the U.S. government. Results do not predict a visa decision.", // home.footer_disclaimer
-  "დარჩით ინტერვიუში": "Stay in the interview", // home.step_2_title
+  "ბოლომდე დაასრულეთ ინტერვიუ": "Complete the interview", // home.step_2_title
   "დასრულებულია": "Complete", // results.metric_complete
   "დაწყებამდე იპოვეთ წყნარი ადგილი": "Find a quiet place before starting", // briefing.quiet_place_title
   "დაჯავშნეთ ექსპერტთან ინტერვიუსთვის მომზადება WhatsApp-ზე": "Book expert interview preparation on WhatsApp", // results.consultation_button
@@ -101,7 +101,7 @@ export const ENGLISH_BY_GEORGIAN: Record<string, string> = {
   "მესმის, როგორ მუშავდება ჩემი პრაქტიკის მონაცემები და შეიძლება გამოყენებულ იქნას eConsul-ის გასაუმჯობესებლად.": "I understand how my practice data is processed and may be used to improve eConsul.", // briefing.privacy_consent
   "მთავარ გვერდზე გადასვლა": "Go to home", // global.go_home
   "მიდით ინტერვიუზე მომზადებული.": "Step into the interview prepared.", // briefing.headline
-  "მიიღეთ მკაცრი უკუკავშირი": "Get strict feedback", // home.step_3_title
+  "უკუკავშირი": "Feedback", // home.step_3_title
   "მიკროფონი და ინტერვიუს ტაიმერი ჩართული რჩება მთელი სესიის განმავლობაში.": "The microphone and interview timer remain on for the entire session.", // briefing.step_2_text
   "მიკროფონი ჩართული რჩება მთელი ინტერვიუს განმავლობაში. ეს ბეტა ვერსია აანალიზებს საუბარს თქვენს ბრაუზერში და შლის ჩაწერილ აუდიოს სესიის დასრულებისას. თქვენი ტრანსკრიპტი და შედეგი შეიძლება შეინახოს თქვენს ანგარიშში და გამოიგზავნოს ელფოსტით.": "The microphone stays on for the full interview. This beta analyzes speech in your browser and discards recorded audio when the session ends. Your transcript and result may be saved to your account and emailed to you.", // briefing.privacy_details
   "მკაფიო სტრუქტურა": "Clear structure", // results.strength_clarity_title
