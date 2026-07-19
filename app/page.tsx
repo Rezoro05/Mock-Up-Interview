@@ -721,7 +721,7 @@ export default function Home() {
           <div className="language-toggle" role="group" aria-label="Language / ენა / Язык">
             <button className={language === "en" ? "active" : ""} onClick={() => setLanguage("en")} aria-pressed={language === "en"} title="English"><span aria-hidden="true">🇺🇸</span><small>ENG</small></button>
             <button className={language === "ka" ? "active" : ""} onClick={() => setLanguage("ka")} aria-pressed={language === "ka"} title="ქართული"><span aria-hidden="true">🇬🇪</span><small>GEO</small></button>
-            <button className={language === "ru" ? "active" : ""} onClick={() => setLanguage("ru")} aria-pressed={language === "ru"} title="Русский"><span aria-hidden="true">🇷🇺</span><small>RUS</small></button>
+            <button className={`russian-language ${language === "ru" ? "active" : ""}`} onClick={() => setLanguage("ru")} aria-pressed={language === "ru"} title="Русский"><span aria-hidden="true">🇷🇺</span><small>RUS</small></button>
           </div>
           {demoSignedIn && <span className="account-chip">AM</span>}
         </div>
