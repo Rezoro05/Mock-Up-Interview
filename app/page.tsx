@@ -213,7 +213,7 @@ export default function Home() {
   useEffect(() => {
     window.localStorage.setItem("econsul-language", language);
     document.documentElement.lang = language;
-    document.title = language === "en" ? "eConsul | U.S. Visa Interview Practice" : "eConsul | აშშ-ის ვიზის ინტერვიუს პრაქტიკა";
+    document.title = language === "en" ? "eConsul | U.S. Visa Practice Interview" : "eConsul | აშშ-ის ვიზის საცდელი გასაუბრება";
   }, [language]);
 
   const recorderRef = useRef<MediaRecorder | null>(null);
@@ -484,7 +484,7 @@ export default function Home() {
     if (!strengths.length) strengths.push({ title: t("ინტერვიუ დასრულებულია"), detail: t("თქვენ ბოლომდე დარჩით ინტერვიუზე. ახლა ფოკუსირდით იმაზე, რომ თითოეული პასუხი იყოს კონკრეტული და პირდაპირი.") });
 
     const improvements: Array<{ title: string; detail: string }> = [];
-    if (relevance < 78) improvements.push({ title: t("უპასუხეთ ზუსტ კითხვას"), detail: t("კონსულმა შეიძლება ეჭვქვეშ დააყენოს პასუხები, რომლებიც არ შეიცავს სახელებს, თარიღებს, ადგილებს, ხარჯებს, პასუხისმგებლობებს ან დაბრუნების გეგმებს.") });
+    if (relevance < 78) improvements.push({ title: t("ზუსტად უპასუხეთ კითხვას"), detail: t("კონსულმა შეიძლება ეჭვქვეშ დააყენოს პასუხები, რომლებიც არ შეიცავს სახელებს, თარიღებს, ადგილებს, ხარჯებს, პასუხისმგებლობებს ან დაბრუნების გეგმებს.") });
     if (completeness < 75) improvements.push({ title: t("დაასაბუთეთ ყოველი პასუხი"), detail: t("გაეცით ერთი პირდაპირი პასუხი და დაასახელეთ მინიმუმ ერთი კონკრეტული დამადასტურებელი ფაქტი. ბუნდოვანი ან დაუსაბუთებელი მტკიცებები ფასდება სიფრთხილით.") });
     if (clarity < 75) improvements.push({ title: t("გააუმჯობესეთ ტემპი და სტრუქტურა"), detail: t("შეინარჩუნეთ პასუხები დაახლოებით 10–45 წამის ფარგლებში და გამოიყენეთ მარტივი წინადადებები გრძელი განმარტებების ნაცვლად.") });
     if (delivery < 70) improvements.push({ title: t("ისუბრეთ უფრო კონტროლირებად"), detail: t("ისაუბრეთ ოდნავ უფრო ხმამაღლა, შეამცირეთ გრძელი პაუზები და შეინარჩუნეთ სტაბილური ტემპი. ეს არის გადმოცემის უკუკავშირი და არა პიროვნული შეფასება.") });
@@ -497,24 +497,23 @@ export default function Home() {
   return (
     <main className="site-shell">
       <header className="site-header">
-        <button className="logo-button" onClick={() => setStep("landing")} aria-label={t("მთავარ გვერდზე გადასვლა")}><BrandMark /></button>
+        <div className="header-brand"><button className="logo-button" onClick={() => setStep("landing")} aria-label={t("მთავარ გვერდზე გადასვლა")}><BrandMark /></button><span className="beta-badge">{t("ბეტა")}</span></div>
         <div className="header-right">
           <div className="language-toggle" role="group" aria-label="Language / ენა">
             <button className={language === "en" ? "active" : ""} onClick={() => setLanguage("en")} aria-pressed={language === "en"} title="English"><span aria-hidden="true">🇺🇸</span><small>ENG</small></button>
             <button className={language === "ka" ? "active" : ""} onClick={() => setLanguage("ka")} aria-pressed={language === "ka"} title="ქართული"><span aria-hidden="true">🇬🇪</span><small>GEO</small></button>
           </div>
-          <span className="demo-pill"><span /> {t("ბეტა")}</span>{demoSignedIn && <span className="account-chip">AM</span>}
+          {demoSignedIn && <span className="account-chip">AM</span>}
         </div>
       </header>
 
       {step === "landing" && (
         <section className="landing-page">
           <div className="hero-copy">
-            <p className="eyebrow"><span>●</span> {t("აშშ-ის ვიზის ინტერვიუს პრაქტიკა")}</p>
-            <h1>{t("ორი წუთი შეიძლება მთელ მარადისობად მოგეჩვენოთ.")}</h1>
-            <p className="hero-lede">{t("ივარჯიშეთ ნათლად, მშვიდად და გულწრფელად პასუხის გაცემაში აშშ-ის კონსულთან ინტერვიუმდე. მიიღეთ მკაცრი, მტკიცებულებებზე დაფუძნებული უკუკავშირი ხუთ წუთზე ნაკლებ დროში.")}</p>
-            <div className="hero-actions"><button className="primary-button" onClick={() => setStep("briefing")}>{t("პრაქტიკული ინტერვიუს დაწყება")} <span>→</span></button><button className="text-button" onClick={() => document.getElementById("how")?.scrollIntoView({ behavior: "smooth" })}>{t("ნახეთ, როგორ მუშაობს")}</button></div>
-            <div className="trust-row" aria-label={t("პროდუქტის უპირატესობები")}><span>✓ {t("კითხვები ჯერ გამოითქმის")}</span><span>✓ {t("უწყვეტი ინტერვიუ")}</span><span>✓ {t("არანაირი გამოგონილი ქულები")}</span></div>
+            <p className="eyebrow"><span>●</span> {t("აშშ-ის ვიზის საცდელი გასაუბრება ვირტუალურ კონსულ ოფიცერთან")}</p>
+            <h1>{t("მზად ხარ სამოგზაურო ინტერვიუსთვის?")}</h1>
+            <p className="hero-lede">{t("ივარჯიშეთ მშვიდად. იყავით გულწრფელი და გამოცადეთ საკუთარი თავი.")}</p>
+            <div className="hero-actions"><button className="primary-button" onClick={() => setStep("briefing")}>{t("გასაუბრების დაწყება")} <span>→</span></button><button className="text-button" onClick={() => document.getElementById("how")?.scrollIntoView({ behavior: "smooth" })}>{t("ნახეთ, როგორ მუშაობს")}</button></div>
           </div>
           <div className="hero-visual" aria-label={t("პრაქტიკული ინტერვიუს წინასწარი ნახვა")}>
             <img className="hero-scene" src="/hero-realistic.png" alt={t("ვიზის მაძიებელი ესაუბრება კონსულს შეერთებული შტატების დროშის გვერდით")} />
@@ -522,10 +521,9 @@ export default function Home() {
               <strong>{t("გაიარეთ ყველაზე მნიშვნელოვანი სამოგზაურო ინტერვიუს პრაქტიკა.")}</strong>
               <span>{t("დაიწყეთ იმიტირებული ინტერვიუ აშშ-ის eConsul-თან")}</span>
             </div>
-            <div className="hero-scene-caption"><span className="live-dot" /><div><strong>{t("ივარჯიშეთ რეალურ რიტმში")}</strong><small>{t("მოუსმინეთ, უპასუხეთ, გააგრძელეთ.")}</small></div></div>
+            <div className="hero-scene-caption"><span className="live-dot" /><small>{t("მოუსმინეთ, უპასუხეთ, გააგრძელეთ.")}</small></div>
           </div>
-          <div className="brand-strip"><span>{t("ივარჯიშეთ ყველაზე მნიშვნელოვან კითხვებზე")}</span><strong>B1/B2</strong><strong>F-1</strong><strong>J-1</strong></div>
-          <section className="how-section" id="how"><p className="section-kicker">{t("როგორ მუშაობს")}</p><h2>{t("მომზადების უფრო რეალისტური გზა.")}</h2><div className="steps-grid"><article><b>01</b><h3>{t("ჯერ მოუსმინეთ")}</h3><p>{t("ოფიცერი თითოეულ კითხვას ხმამაღლა სვამს. თავიდან მოუსმინეთ ან ტექსტი გამოაჩინეთ მხოლოდ საჭიროების შემთხვევაში.")}</p></article><article><b>02</b><h3>{t("დარჩით ინტერვიუში")}</h3><p>{t("ტაიმერი და მიკროფონი აგრძელებს მუშაობას მთელი სესიის განმავლობაში.")}</p></article><article><b>03</b><h3>{t("მიიღეთ მკაცრი უკუკავშირი")}</h3><p>{t("თქვენი შედეგი იყენებს მხოლოდ ჩაწერილ საუბარს, შესაბამისობას, ტემპს, პარაზიტ სიტყვებს და გადმოცემის მტკიცებულებას.")}</p></article></div></section>
+          <section className="how-section" id="how"><p className="section-kicker">{t("როგორ მუშაობს")}</p><h2>{t("მომზადების მარტივი მეთოდი")}</h2><div className="steps-grid"><article><b>01</b><h3>{t("ჯერ მოუსმინეთ")}</h3><p>{t("ოფიცერი თითოეულ კითხვას ხმამაღლა სვამს. თავიდან მოუსმინეთ ან ტექსტი გამოაჩინეთ მხოლოდ საჭიროების შემთხვევაში.")}</p></article><article><b>02</b><h3>{t("დარჩით ინტერვიუში")}</h3><p>{t("ტაიმერი და მიკროფონი აგრძელებს მუშაობას მთელი სესიის განმავლობაში.")}</p></article><article><b>03</b><h3>{t("მიიღეთ მკაცრი უკუკავშირი")}</h3><p>{t("თქვენი შედეგი იყენებს მხოლოდ ჩაწერილ საუბარს, შესაბამისობას, ტემპს, პარაზიტ სიტყვებს და გადმოცემის მტკიცებულებას.")}</p></article></div></section>
           <footer className="site-footer"><BrandMark /><p>{t("დამოუკიდებელი პრაქტიკული ინსტრუმენტი. არ არის დაკავშირებული აშშ-ის მთავრობასთან. შედეგები არ პროგნოზირებს ვიზის გადაწყვეტილებას.")}</p></footer>
         </section>
       )}
@@ -535,19 +533,19 @@ export default function Home() {
           <div className="briefing-visual"><img src="/embassy-security-only.png" alt={t("შეერთებული შტატების საკონსულოს შესასვლელი დაცვით")} /><span>{t("თქვენი ინტერვიუ მალე დაიწყება")}</span></div>
           <div className="briefing-copy">
             <p className="eyebrow"><span>02</span> {t("საბოლოო მომზადება")}</p>
-            <h1>{t("მიდით ინტერვიუზე მომზადებული.")}</h1>
-            <p>{t("შემდეგი ეკრანი ახდენს მოკლე საკონსულო ინტერვიუს სიმულაციას. დაწყების შემდეგ, იყავით ფოკუსირებული და უპასუხეთ ბუნებრივად.")}</p>
+            <h1>{t("როგორ მოვემზადოთ ინტერვიუსთვის?")}</h1>
+            <p>{t("შემდეგი გვერდი არის საკონსულო ინტერვიუს სიმულაცია. დაწყების ღილაკზე დაჭერისას, იყავით ფოკუსირებული და უპასუხეთ კითხვებს ბუნებრივად ინგლისურ ენაზე.")}</p>
             <ol className="briefing-list">
               <li><b>1</b><div><strong>{t("ოფიცერი საუბრობს პირველი")}</strong><span>{t("მოუსმინეთ სრულ კითხვას. საჭიროების შემთხვევაში, კიდევ ერთხელ მოუსმინეთ.")}</span></div></li>
-              <li><b>2</b><div><strong>{t("თქვენ პასუხობთ ხმით")}</strong><span>{t("მიკროფონი და ინტერვიუს ტაიმერი ჩართული რჩება მთელი სესიის განმავლობაში.")}</span></div></li>
-              <li><b>3</b><div><strong>{t("სამი წუთი თითო პასუხზე")}</strong><span>{t("ლიმიტის ამოწურვისას, ოფიცერი ავტომატურად გადადის შემდეგ კითხვაზე.")}</span></div></li>
-              <li><b>4</b><div><strong>{t("მოელით მკაცრ შეფასებას")}</strong><span>{t("მოკლე, შეუსაბამო ან გაურკვეველი პასუხები კარგავს ქულებს. პასუხის გაუცემლობა ფასდება ნულით.")}</span></div></li>
+              <li><b>2</b><div><strong>{t("თქვენ პასუხობთ")}</strong><span>{t("მიკროფონი და ინტერვიუს ტაიმერი ჩართული რჩება მთელი სესიის განმავლობაში.")}</span></div></li>
+              <li><b>3</b><div><strong>{t("შეეცადეთ თითო კითხვას უპასუხოთ 15-45 წამის ინტერვალით.")}</strong><span>{t("ინტერვიუს მაქსიმალური ხანგრძლივობა არის 5 წუთი. თითო კითხვაზე გადაჭარბებული პასუხის შემთხვევაში ოფიცერი ავტომატურად გადადის შემდეგ კითხვაზე.")}</span></div></li>
+              <li><b>4</b><div><strong>{t("მოემზადეთ კრიტიკული შეფასებისთვის")}</strong><span>{t("მოკლე, შეუსაბამო ან გაურკვეველი პასუხები კარგავს ქულებს. პასუხის გაუცემლობა ფასდება ნულით.")}</span></div></li>
             </ol>
             <div className="briefing-confirmation">
               <h2>{t("სანამ დაიწყებთ")}</h2>
               {!demoSignedIn ? <div className="consent-card sign-in-card"><div className="google-mark" aria-hidden="true">G</div><div><h2>{t("შეინახეთ და მიიღეთ თქვენი შედეგი")}</h2><p>{t("გააგრძელეთ Google-ით, რათა თქვენი პრაქტიკის შედეგი შეინახოს და გაიგზავნოს თქვენს ელფოსტაზე.")}</p></div><button className="google-button" onClick={() => setDemoSignedIn(true)}>{t("Google-ით გაგრძელება")}</button><small>{t("პროტოტიპში შესვლა. უსაფრთხო Google კავშირი დაემატება ინტეგრაციის ფაზაში.")}</small></div> : <div className="signed-in-row"><span className="account-chip">AM</span><div><strong>{t("ავტორიზებული ხართ ამ პროტოტიპისთვის")}</strong><small>alex@example.com</small></div><b>✓</b></div>}
-              <div className="consent-card"><label className="check-row"><input type="checkbox" checked={privacyAccepted} onChange={(event) => setPrivacyAccepted(event.target.checked)} /><span><strong>{t("მესმის, როგორ მუშავდება ჩემი პრაქტიკის მონაცემები და შეიძლება გამოყენებულ იქნას eConsul-ის გასაუმჯობესებლად.")}</strong><small>{t("მიკროფონი ჩართული რჩება მთელი ინტერვიუს განმავლობაში. ეს ბეტა ვერსია აანალიზებს საუბარს თქვენს ბრაუზერში და შლის ჩაწერილ აუდიოს სესიის დასრულებისას. თქვენი ტრანსკრიპტი და შედეგი შეიძლება შეინახოს თქვენს ანგარიშში და გამოიგზავნოს ელფოსტით.")}</small></span></label></div>
-              <div className="ready-note"><span>◉</span><div><strong>{t("დაწყებამდე იპოვეთ წყნარი ადგილი")}</strong><small>{t("ტაიმერი დაუყოვნებლივ იწყება. მოუსმინეთ ყველა კითხვას, უპასუხეთ ბუნებრივად და დაასრულეთ თითოეული პასუხი შემდეგზე გადასვლამდე.")}</small></div></div>
+              <div className="consent-card"><label className="check-row"><input type="checkbox" checked={privacyAccepted} onChange={(event) => setPrivacyAccepted(event.target.checked)} /><span><strong>{t("თანხმობას ვაცხადებ მონაცემების გამოყენების შესახებ, რაც ემსახურება eConsul-ის სერვისების გაუმჯობესებას.")}</strong><small>{t("მიკროფონი ჩართული რჩება მთელი ინტერვიუს განმავლობაში. ეს ბეტა ვერსია აანალიზებს საუბარს თქვენს ბრაუზერში და შლის ჩაწერილ აუდიოს სესიის დასრულებისას. თქვენი ტრანსკრიპტი და შედეგი შეიძლება შეინახოს თქვენს ანგარიშში და გამოიგზავნოს ელფოსტით.")}</small><em>{t("ეს არ არის ოფიციალური ინტერვიუ, ეს არის მხოლოდ საკონსულო ინტერვიუს სიმულაცია.")}</em></span></label></div>
+              <div className="ready-note"><span>◉</span><div><strong>{t("დაწყებამდე იპოვეთ წყნარი ადგილი")}</strong><small>{t("მოუსმინეთ ყველა კითხვას, უპასუხეთ ბუნებრივად და დაასრულეთ თითოეული პასუხი შემდეგზე გადასვლით.")}</small></div></div>
             </div>
             {permissionError && <p className="permission-error" role="alert">{permissionError}</p>}
             <div className="briefing-actions"><button className="back-button" onClick={() => setStep("landing")}>← {t("უკან")}</button><button className="primary-button" disabled={!privacyAccepted || !demoSignedIn} onClick={beginInterview}>{t("ინტერვიუს დაწყება")} <span>→</span></button></div>
@@ -557,22 +555,22 @@ export default function Home() {
 
       {step === "interview" && (
         <section className="interview-page">
-          <div className="interview-meta"><strong>{questions[questionIndex].scored === false ? t("მოთელვა") : language === "en" ? `Question ${answers.length + 1} of ${questions.filter((question) => question.scored !== false).length}` : `კითხვა ${answers.length + 1} ${questions.filter((question) => question.scored !== false).length}-დან`}</strong></div>
+          <div className="interview-meta"><strong>{questions[questionIndex].scored === false ? t("მიმდინარეობს ინტერვიუ") : language === "en" ? `Question ${answers.length + 1} of ${questions.filter((question) => question.scored !== false).length}` : `კითხვა ${answers.length + 1} ${questions.filter((question) => question.scored !== false).length}-დან`}</strong></div>
           <div className="answer-timeline" aria-label={t("პასუხისთვის დარჩენილი დრო")}><span style={{ width: `${Math.max(0, 100 - (answerSeconds / 180) * 100)}%` }} /></div>
           <div className="interview-room">
             <div className={`officer-panel ${isQuestionSpeaking ? "speaking" : ""}`}>
               <img src="/consular-officer-solo.png" alt={t("კონსული, რომელიც ატარებს იმიტირებულ ინტერვიუს")} />
-              <div className="officer-status"><span>●</span><strong>{isQuestionSpeaking ? t("საუბრობს") : t("უსმენს")}</strong></div>
+              <div className="officer-status"><span>●</span><strong>{isQuestionSpeaking ? t("საუბრობს") : t("გისმენთ")}</strong></div>
               {isQuestionSpeaking && <div className="portrait-wave" aria-hidden="true">{[18, 34, 52, 30, 62, 42, 24].map((height, index) => <i key={index} style={{ height }} />)}</div>}
             </div>
             <div className="question-stage">
               <h1 className="question-reveal">{questions[questionIndex].prompt}</h1>
               {isQuestionSpeaking && <div className="audio-bars" aria-label={t("იკვრება კითხვის აუდიო")}>{[22, 42, 64, 34, 76, 48, 60, 28, 52].map((height, index) => <i key={index} style={{ height }} />)}</div>}
-              <div className={`mic-live ${isQuestionSpeaking ? "muted-analysis" : ""}`}><span className="mic-icon" aria-hidden="true"><i /><b /></span><strong>{isQuestionSpeaking ? t("მოუსმინეთ") : t("უპასუხეთ ახლა")}</strong></div>
-              <div className="question-controls"><button className="secondary-button" disabled={isQuestionSpeaking} onClick={speakQuestion}>↻ {t("ხელახლა მოსმენა")}</button><button className="primary-button finish-answer" disabled={isQuestionSpeaking} onClick={finishAnswer}>{questionIndex === questions.length - 1 ? t("ინტერვიუს დასრულება") : t("პასუხის დასრულება")} <span>→</span></button></div>
+              <div className={`mic-live ${isQuestionSpeaking ? "muted-analysis" : ""}`}><span className="mic-icon" aria-hidden="true"><i /><b /></span><strong>{isQuestionSpeaking ? t("მოუსმინეთ") : t("უპასუხეთ კითხვას")}</strong></div>
+              <div className="question-controls"><button className="secondary-button" disabled={isQuestionSpeaking} onClick={speakQuestion}>↻ {t("კითხვის გამეორება")}</button><button className="primary-button finish-answer" disabled={isQuestionSpeaking} onClick={finishAnswer}>{questionIndex === questions.length - 1 ? t("ინტერვიუს დასრულება") : t("შემდეგი")} <span>→</span></button></div>
             </div>
           </div>
-          <button className="quiet-exit" onClick={endPractice}>{t("პრაქტიკის დასრულება")}</button>
+          <button className="quiet-exit" onClick={endPractice}>{t("ინტერვიუს შეწყვეტა")}</button>
         </section>
       )}
 
@@ -582,12 +580,11 @@ export default function Home() {
 
       {step === "results" && (
         <section className="results-page">
-          <div className={`results-hero ${!result.available ? "no-score" : result.score < 40 ? "result-red" : result.score < 80 ? "result-yellow" : "result-green"}`}><div><p className="eyebrow"><span>{result.available ? "✓" : "!"}</span> {t("მტკიცებულებებზე დაფუძნებული შეფასება")}</p><h1>{result.available ? (result.score >= 80 ? t("მყარი პრაქტიკა, თუმცა დეტალები ჯერ კიდევ დასახვეწია.") : result.score >= 40 ? t("თქვენს პასუხებს მეტი სიზუსტე სჭირდება.") : t("ეს ინტერვიუ სერიოზულ გაუმჯობესებას საჭიროებს.")) : t("სანდო ქულა არ გაცემულა.")}</h1><p>{result.available ? t("ეს შედეგი განზრახ მკაცრია. შეუსაბამო, ძალიან მოკლე, ბუნდოვანი, თავის არიდების ან დაუსაბუთებელი პასუხების ქულები იზღუდება.") : t("საუბრის ტრანსკრიფცია მიუწვდომელი იყო, ამიტომ eConsul-მა უარი თქვა პროცენტის გამოგონებაზე.")}</p></div><div className="score-ring" style={{ "--score": `${result.score * 3.6}deg` } as React.CSSProperties}><div><strong>{result.available ? `${result.score}%` : "—"}</strong><span>{result.available ? t("პრაქტიკის ქულა") : t("არ არის მტკიცებულება")}</span></div></div></div>
-          <div className="result-grid"><article className="result-card strengths"><div className="result-title"><span>✓</span><h2>{t("რას ამტკიცებს მტკიცებულება")}</h2></div><ul>{result.strengths.length ? result.strengths.map((item) => <li key={item.title}><strong>{item.title}</strong><small>{item.detail}</small></li>) : <li><strong>{t("არანაირი დადებითი მტკიცება მტკიცებულების გარეშე")}</strong><small>{t("აპლიკაცია არ შეაქებს პასუხებს, რომელთა მოსმენაც და გაანალიზებაც ვერ შეძლო.")}</small></li>}</ul></article><article className="result-card improvements"><div className="result-title"><span>↗</span><h2>{t("საჭიროებს გაუმჯობესებას")}</h2></div><ul>{result.improvements.map((item) => <li key={item.title}><strong>{item.title}</strong><small>{item.detail}</small></li>)}</ul></article></div>
-          {result.available && <div className="breakdown-card"><div><h2>{t("მკაცრი ქულების გადანაწილება")}</h2><p>{t("გადმოცემის სანდოობა არის მიახლოებითი მაჩვენებელი, რომელიც ეფუძნება მეტყველების ამოცნობის სანდოობას და ხმის აქტივობას — და არა თქვენი პიროვნების შეფასებას.")}</p></div>{[{ label: t("რელევანტურობა"), value: result.relevance }, { label: t("სიცხადე"), value: result.clarity }, { label: t("გადმოცემა"), value: result.delivery }, { label: t("დასრულებულია"), value: result.completeness }].map((item) => <div className="score-row" key={item.label}><span>{item.label}</span><i><b style={{ width: `${item.value}%` }} /></i><strong>{item.value}</strong></div>)}</div>}
-          <div className="transcript-review"><div><h2>{t("თქვენი ინტერვიუ: კითხვები და პასუხები")}</h2><p>{t("გადახედეთ ზუსტად რა გკითხეს და რა გაიგონა აპლიკაციამ თითოეული პასუხიდან.")}</p></div><div className="qa-review-list">{responses.map((response, index) => <article key={`${response.question}-${index}`}><span>Q{index + 1}</span><div><strong>{response.question}</strong><p>{response.answer || t("გამოსაყენებელი საუბარი არ დაფიქსირდა.")}</p></div></article>)}</div></div>
-          <div className="email-note"><span>✉</span><div><strong>{t("თქვენი შედეგი მზად არის")}</strong><small>{t("დაკავშირებულ ვერსიაში, მტკიცებულება და ტრანსკრიპტის მიმოხილვა — და არა წინასწარ განსაზღვრული ქულა — გამოგიგზავნებათ ელფოსტით.")}</small></div></div>
-          <div className="result-actions"><a className="primary-button consultation-button" href={`https://wa.me/995596114488?text=${encodeURIComponent(t("გამარჯობა eConsul, მსურს კონსულტაციის დაჯავშნა აშშ-ის ვიზის ინტერვიუსთვის ექსპერტთან მოსამზადებლად."))}`} target="_blank" rel="noopener noreferrer">{t("დაჯავშნეთ ექსპერტთან ინტერვიუსთვის მომზადება WhatsApp-ზე")} <span>→</span></a><button className="secondary-button" onClick={restart}>{t("კიდევ ერთხელ ვარჯიში")}</button></div>
+          <div className={`results-hero ${!result.available ? "no-score" : result.score < 40 ? "result-red" : result.score < 80 ? "result-yellow" : "result-green"}`}><div><p className="eyebrow"><span>{result.available ? "✓" : "!"}</span> {t("გამოცდილებაზე დაფუძნებული შეფასება")}</p><h1>{result.available ? (result.score >= 80 ? t("მყარი პრაქტიკა, თუმცა დეტალები ჯერ კიდევ დასახვეწია.") : result.score >= 40 ? t("თქვენს პასუხებს მეტი სიზუსტე სჭირდება.") : t("ეს ინტერვიუ სერიოზულ გაუმჯობესებას საჭიროებს.")) : t("სანდო ქულა არ გაცემულა.")}</h1><p>{result.available ? t("პასუხები არის შეუსაბამო, ძალიან მოკლე ან ბუნდოვანი. თავის არიდებისას ან დაუსაბუთებელი პასუხების გაცემით ქულები ნულდება.") : t("საუბრის ტრანსკრიფცია მიუწვდომელი იყო, ამიტომ eConsul-მა უარი თქვა პროცენტის გამოგონებაზე.")}</p></div><div className="score-ring" style={{ "--score": `${result.score * 3.6}deg` } as React.CSSProperties}><div><strong>{result.available ? `${result.score}%` : "—"}</strong><span>{result.available ? t("პრაქტიკის ქულა") : t("არ არის მტკიცებულება")}</span></div></div></div>
+          <div className="result-grid"><article className="result-card strengths"><div className="result-title"><span>✓</span><h2>{t("შედეგები")}</h2></div><ul>{result.strengths.length ? result.strengths.map((item) => <li key={item.title}><strong>{item.title}</strong><small>{item.detail}</small></li>) : <li><strong>{t("არანაირი დადებითი მტკიცება მტკიცებულების გარეშე")}</strong><small>{t("აპლიკაცია არ შეაქებს პასუხებს, რომელთა მოსმენაც და გაანალიზებაც ვერ შეძლო.")}</small></li>}</ul></article><article className="result-card improvements"><div className="result-title"><span>↗</span><h2>{t("საჭიროებს გაუმჯობესებას")}</h2></div><ul>{result.improvements.map((item) => <li key={item.title}><strong>{item.title}</strong><small>{item.detail}</small></li>)}</ul></article></div>
+          {result.available && <div className="breakdown-card"><div><h2>{t("ქულების გადანაწილება")}</h2><p>{t("გადმოცემის სანდოობა არის მიახლოებითი მაჩვენებელი, რომელიც ეფუძნება მეტყველების ამოცნობის სანდოობას და ხმის აქტივობას — და არა თქვენი პიროვნების შეფასებას.")}</p></div>{[{ label: t("რელევანტურობა"), value: result.relevance }, { label: t("სიცხადე"), value: result.clarity }, { label: t("გადმოცემა"), value: result.delivery }, { label: t("დასრულებულია"), value: result.completeness }].map((item) => <div className="score-row" key={item.label}><span>{item.label}</span><i><b style={{ width: `${item.value}%` }} /></i><strong>{item.value}</strong></div>)}</div>}
+          <div className="transcript-review"><div><h2>{t("თქვენი ინტერვიუ: კითხვები და პასუხები")}</h2><p>{t("გადახედეთ ზუსტად რა გკითხეს და რა გაიგონა აპლიკაციამ თითოეული პასუხიდან.")}</p></div><div className="qa-review-list">{responses.map((response, index) => <article key={`${response.question}-${index}`}><span>Q{index + 1}</span><div><strong>{response.question}</strong><p>{response.answer || t("ვერ მოხერხდა საუბრის აღქმა.")}</p></div></article>)}</div></div>
+          <div className="result-actions"><a className="primary-button consultation-button" href={`https://wa.me/995596114488?text=${encodeURIComponent(t("გამარჯობა eConsul, მსურს კონსულტაციის დაჯავშნა აშშ-ის ვიზის ინტერვიუსთვის ექსპერტთან მოსამზადებლად."))}`} target="_blank" rel="noopener noreferrer">{t("მოემზადე ინტერვიუსთვის პროფესიონალის დახმარებით. დაგვიკავშირდი WhatsApp-ზე")} <span>→</span></a><button className="secondary-button" onClick={restart}>{t("სცადე ხელახლა")}</button></div>
           <p className="legal-note">{t("eConsul არის დამოუკიდებელი საგანმანათლებლო პრაქტიკული ინსტრუმენტი. ეს ქულა ზომავს მხოლოდ ჩაწერილ პრაქტიკულ პასუხს. ეს არ არის ვიზის გადაწყვეტილება, დამტკიცების პროგნოზი, ფსიქოლოგიური შეფასება ან იურიდიული რჩევა.")}</p>
         </section>
       )}
