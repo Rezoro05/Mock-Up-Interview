@@ -57,7 +57,7 @@ type RecognitionConstructor = new () => RecognitionLike;
 
 const interviewQuestions: Record<VisaType, QuestionSpec[]> = {
   "B1/B2": [
-    { prompt: "What is the purpose of your trip to the United States?", criteria: [["tourism", "vacation", "visit", "business", "conference"], ["travel", "trip", "united states", "u.s."]] },
+    { prompt: "Have you traveled outside your home country before?", criteria: [["yes", "have traveled", "visited", "went", "no", "never"], ["year", "last", "before", "country", "europe", "asia", "turkey", "georgia", "armenia", "azerbaijan"]] },
     { prompt: "Which places will you visit, and how long will you stay?", criteria: [["day", "week", "month", "date"], ["new york", "california", "florida", "washington", "boston", "chicago", "hotel", "city", "state"]] },
     { prompt: "Who will pay for your trip?", criteria: [["myself", "I will", "employer", "company", "parents", "family", "sponsor"], ["salary", "savings", "budget", "cost", "pay"]] },
     { prompt: "Tell me about your current job and a normal workday.", criteria: [["work", "job", "employed", "company", "business"], ["manage", "design", "teach", "develop", "meet", "client", "responsible", "daily"]] },
