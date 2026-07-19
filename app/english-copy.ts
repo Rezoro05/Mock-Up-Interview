@@ -1,5 +1,5 @@
 export const ENGLISH_BY_GEORGIAN: Record<string, string> = {
-  "თქვენ საუბრობთ": "You are speaking",
+  "თქვენი პასუხი იწერება": "Your answer is being recorded",
   "ოფიცერი თითოეულ კითხვას ხმამაღლა სვამს. თუ კითხვა ვერ გაიგეთ, შეგიძლიათ ღილაკზე თითის დაჭერით ხელახლა მოუსმინოთ კითხვას. მიეცით წვდომა თქვენს მიკროფონს, რათა მოახდინოთ მიკროფონით კომუნიკაცია.": "The officer asks each question aloud. If you do not understand a question, press the button to hear it again. Allow microphone access so you can communicate by voice.",
   "ბოლომდე უპასუხეთ ყველა კითხვას. ინტერვიუს მსვლელობისას მიკროფონი აგრძელებს მუშაობას მთელი სესიის განმავლობაში.": "Answer every question fully. The microphone remains active throughout the interview.",
   "თქვენი შედეგი დაფუძნებულია მხოლოდ ჩაწერილ საუბარზე, შესაბამისობაზე, ტემპზე, სიტყვებზე და მთლიან კომუნიკაციაზე.": "Your result is based only on the captured speech, relevance, pace, word choice, and overall communication.",
