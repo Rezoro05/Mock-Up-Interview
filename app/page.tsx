@@ -86,6 +86,8 @@ const warmupQuestion: QuestionSpec = {
   scored: false,
 };
 
+const ANSWER_LIMIT_SECONDS = 60;
+
 const mandatoryQuestions: QuestionSpec[] = [
   {
     prompt: "What's the purpose of your visit?",
@@ -655,7 +657,7 @@ export default function Home() {
   autoFinishRef.current = finishAnswer;
 
   useEffect(() => {
-    if (step !== "interview" || isQuestionSpeaking || !answerActiveRef.current || answerSeconds < 180) return;
+    if (step !== "interview" || isQuestionSpeaking || !answerActiveRef.current || answerSeconds < ANSWER_LIMIT_SECONDS) return;
     autoFinishRef.current();
   }, [answerSeconds, isQuestionSpeaking, step]);
 
@@ -755,7 +757,7 @@ export default function Home() {
             <ol className="briefing-list">
               <li><b>1</b><div><strong>{t("ოფიცერი საუბრობს პირველი")}</strong><span>{t("მოუსმინეთ სრულ კითხვას. საჭიროების შემთხვევაში, კიდევ ერთხელ მოუსმინეთ.")}</span></div></li>
               <li><b>2</b><div><strong>{t("თქვენ პასუხობთ")}</strong><span>{t("მიკროფონი და ინტერვიუს ტაიმერი ჩართული რჩება მთელი სესიის განმავლობაში.")}</span></div></li>
-              <li><b>3</b><div><strong>{t("შეეცადეთ თითო კითხვას უპასუხოთ 15-45 წამის ინტერვალით.")}</strong><span>{t("ინტერვიუს მაქსიმალური ხანგრძლივობა არის 5 წუთი. თითო კითხვაზე გადაჭარბებული პასუხის შემთხვევაში ოფიცერი ავტომატურად გადადის შემდეგ კითხვაზე.")}</span></div></li>
+              <li><b>3</b><div><strong>{t("შეეცადეთ თითო კითხვას უპასუხოთ 15-45 წამის ინტერვალით.")}</strong><span>{t("თითო პასუხის მაქსიმალური ხანგრძლივობა არის 1 წუთი. ლიმიტის ამოწურვისას ოფიცერი ავტომატურად გადადის შემდეგ კითხვაზე.")}</span></div></li>
               <li><b>4</b><div><strong>{t("მოემზადეთ კრიტიკული შეფასებისთვის")}</strong><span>{t("მოკლე, შეუსაბამო ან გაურკვეველი პასუხები კარგავს ქულებს. პასუხის გაუცემლობა ფასდება ნულით.")}</span></div></li>
             </ol>
             <div className="briefing-confirmation">
@@ -773,7 +775,7 @@ export default function Home() {
       {step === "interview" && (
         <section className="interview-page">
           <div className="interview-meta"><strong>{questions[questionIndex].scored === false ? t("მიმდინარეობს ინტერვიუ") : language === "en" ? `Question ${answers.length + 1} of ${questions.filter((question) => question.scored !== false).length}` : language === "ru" ? `Вопрос ${answers.length + 1} из ${questions.filter((question) => question.scored !== false).length}` : `კითხვა ${answers.length + 1} ${questions.filter((question) => question.scored !== false).length}-დან`}</strong></div>
-          <div className="answer-timeline" aria-label={t("პასუხისთვის დარჩენილი დრო")}><span style={{ width: `${Math.max(0, 100 - (answerSeconds / 180) * 100)}%` }} /></div>
+          <div className="answer-timeline" aria-label={t("პასუხისთვის დარჩენილი დრო")}><span style={{ width: `${Math.max(0, 100 - (answerSeconds / ANSWER_LIMIT_SECONDS) * 100)}%` }} /></div>
           <div className="interview-room">
             <div className={`officer-panel ${isQuestionSpeaking ? "speaking" : ""}`}>
               <img src="/consular-officer-solo.png" alt={t("კონსული, რომელიც ატარებს იმიტირებულ ინტერვიუს")} />

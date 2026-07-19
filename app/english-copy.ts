@@ -15,7 +15,7 @@ export const ENGLISH_BY_GEORGIAN: Record<string, string> = {
   "შემდეგი გვერდი არის საკონსულო ინტერვიუს სიმულაცია. დაწყების ღილაკზე დაჭერისას, იყავით ფოკუსირებული და უპასუხეთ კითხვებს ბუნებრივად ინგლისურ ენაზე.": "The next page is a consular interview simulation. When you press Start, stay focused and answer the questions naturally in English.",
   "თქვენ პასუხობთ": "You answer",
   "შეეცადეთ თითო კითხვას უპასუხოთ 15-45 წამის ინტერვალით.": "Try to answer each question within 15–45 seconds.",
-  "ინტერვიუს მაქსიმალური ხანგრძლივობა არის 5 წუთი. თითო კითხვაზე გადაჭარბებული პასუხის შემთხვევაში ოფიცერი ავტომატურად გადადის შემდეგ კითხვაზე.": "The maximum interview duration is five minutes. If an answer runs too long, the officer automatically moves to the next question.",
+  "თითო პასუხის მაქსიმალური ხანგრძლივობა არის 1 წუთი. ლიმიტის ამოწურვისას ოფიცერი ავტომატურად გადადის შემდეგ კითხვაზე.": "Each answer has a maximum limit of one minute. When time expires, the officer automatically moves to the next question.",
   "მოემზადეთ კრიტიკული შეფასებისთვის": "Prepare for critical feedback",
   "თანხმობას ვაცხადებ მონაცემების გამოყენების შესახებ, რაც ემსახურება eConsul-ის სერვისების გაუმჯობესებას.": "I consent to the use of my data for the purpose of improving eConsul services.",
   "მიკროფონი ჩართული რჩება მთელი ინტერვიუს განმავლობაში. ეს ბეტა ვერსია აანალიზებს საუბარს თქვენს ბრაუზერში და შლის ჩაწერილ აუდიოს სესიის დასრულებისას. თქვენი ტრანსკრიპტი და შედეგი შეიძლება შეინახოს თქვენს ანგარიშში და გამოიგზავნოს ელფოსტით.": "The microphone remains on throughout the interview. This beta analyzes speech in your browser and deletes the recorded audio when the session ends. Your transcript and result may be saved to your account and emailed to you.",
