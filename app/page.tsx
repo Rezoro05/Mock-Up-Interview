@@ -510,16 +510,16 @@ export default function Home() {
       {step === "landing" && (
         <section className="landing-page">
           <div className="landing-hero">
-            <div className="hero-copy">
-              <p className="eyebrow"><span>●</span> {t("აშშ-ის ვიზის საცდელი გასაუბრება ვირტუალურ კონსულ ოფიცერთან")}</p>
-              <h1>{t("მზად ხარ კონსულ ოფიცერთან ინტერვიუსთვის?")}</h1>
-              <div className="hero-actions"><button className="primary-button" onClick={() => setStep("briefing")}>{t("გასაუბრების დაწყება")} <span>→</span></button></div>
-            </div>
             <div className="hero-visual" aria-label={t("პრაქტიკული ინტერვიუს წინასწარი ნახვა")}>
               <img className="hero-scene" src="/hero-realistic.png" alt={t("ვიზის მაძიებელი ესაუბრება კონსულს შეერთებული შტატების დროშის გვერდით")} />
-              <div className="mobile-hero-message">
-                <strong>{t("გაიარეთ ყველაზე მნიშვნელოვანი სამოგზაურო ინტერვიუს პრაქტიკა.")}</strong>
-                <span>{t("დაიწყეთ იმიტირებული ინტერვიუ აშშ-ის eConsul-თან")}</span>
+              <div className="hero-copy">
+                <p className="eyebrow"><span>●</span> {t("აშშ-ის ვიზის საცდელი გასაუბრება ვირტუალურ კონსულ ოფიცერთან")}</p>
+                <h1>{t("მზად ხარ კონსულ ოფიცერთან ინტერვიუსთვის?")}</h1>
+                <div className="mobile-hero-message">
+                  <strong>{t("გაიარეთ ყველაზე მნიშვნელოვანი სამოგზაურო ინტერვიუს პრაქტიკა.")}</strong>
+                  <span>{t("დაიწყეთ იმიტირებული ინტერვიუ აშშ-ის eConsul-თან")}</span>
+                </div>
+                <div className="hero-actions"><button className="primary-button" onClick={() => setStep("briefing")}>{t("გასაუბრების დაწყება")} <span>→</span></button></div>
               </div>
               <div className="hero-scene-caption"><span className="live-dot" /><small>{t("მოუსმინეთ, უპასუხეთ, გააგრძელეთ.")}</small></div>
             </div>
