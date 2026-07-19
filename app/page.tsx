@@ -430,6 +430,10 @@ export default function Home() {
           </div>
           <div className="hero-visual" aria-label="Practice interview preview">
             <img className="hero-scene" src="/interview-key-visual.png" alt="Illustration of a visa applicant speaking with a consular officer" />
+            <div className="mobile-hero-message">
+              <strong>Practice the most important travel interview.</strong>
+              <span>Start mock-up interview with eConsul of US</span>
+            </div>
             <div className="hero-scene-caption"><span className="live-dot" /><div><strong>Practice the real rhythm</strong><small>Listen, answer, continue.</small></div></div>
           </div>
           <div className="brand-strip"><span>Practice the questions that matter most</span><strong>B1/B2</strong><strong>F-1</strong><strong>J-1</strong></div>
