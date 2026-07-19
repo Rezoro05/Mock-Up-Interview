@@ -214,6 +214,7 @@ export default function Home() {
   const [demoSignedIn, setDemoSignedIn] = useState(false);
   const [isQuestionSpeaking, setIsQuestionSpeaking] = useState(false);
   const [isAnswerRecording, setIsAnswerRecording] = useState(false);
+  const [isApplicantSpeaking, setIsApplicantSpeaking] = useState(false);
   const [answerSeconds, setAnswerSeconds] = useState(0);
   const [liveTranscript, setLiveTranscript] = useState("");
   const [answers, setAnswers] = useState<AnswerAnalysis[]>([]);
@@ -238,6 +239,10 @@ export default function Home() {
   const answerTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const answerStartedAtRef = useRef(0);
   const answerActiveRef = useRef(false);
+  const applicantSpeakingRef = useRef(false);
+  const loudFramesRef = useRef(0);
+  const quietFramesRef = useRef(0);
+  const noiseFloorRef = useRef(0.012);
   const transcriptRef = useRef("");
   const confidenceSamplesRef = useRef<number[]>([]);
   const voiceFramesRef = useRef(0);
@@ -252,6 +257,10 @@ export default function Home() {
   const stopAnswerCapture = useCallback(() => {
     answerActiveRef.current = false;
     setIsAnswerRecording(false);
+    applicantSpeakingRef.current = false;
+    loudFramesRef.current = 0;
+    quietFramesRef.current = 0;
+    setIsApplicantSpeaking(false);
     if (answerTimerRef.current) clearInterval(answerTimerRef.current);
     answerTimerRef.current = null;
     try { recognitionRef.current?.stop(); } catch { /* already stopped */ }
@@ -299,8 +308,28 @@ export default function Home() {
           sum += normalized * normalized;
         }
         const rms = Math.sqrt(sum / samples.length);
+        const voiceThreshold = Math.max(0.025, noiseFloorRef.current * 2.4);
+        const voiceDetected = rms > voiceThreshold;
         totalFramesRef.current += 1;
-        if (rms > 0.025) voiceFramesRef.current += 1;
+        if (voiceDetected) {
+          voiceFramesRef.current += 1;
+          loudFramesRef.current += 1;
+          quietFramesRef.current = 0;
+        } else {
+          loudFramesRef.current = 0;
+          quietFramesRef.current += 1;
+          if (!applicantSpeakingRef.current) noiseFloorRef.current = Math.min(0.04, noiseFloorRef.current * 0.96 + rms * 0.04);
+        }
+        if (!applicantSpeakingRef.current && loudFramesRef.current >= 2) {
+          applicantSpeakingRef.current = true;
+          setIsApplicantSpeaking(true);
+        } else if (applicantSpeakingRef.current && quietFramesRef.current >= 10) {
+          applicantSpeakingRef.current = false;
+          setIsApplicantSpeaking(false);
+        }
+      } else if (applicantSpeakingRef.current) {
+        applicantSpeakingRef.current = false;
+        setIsApplicantSpeaking(false);
       }
       animationFrameRef.current = requestAnimationFrame(measure);
     };
@@ -320,6 +349,11 @@ export default function Home() {
     confidenceSamplesRef.current = [];
     voiceFramesRef.current = 0;
     totalFramesRef.current = 0;
+    loudFramesRef.current = 0;
+    quietFramesRef.current = 0;
+    noiseFloorRef.current = 0.012;
+    applicantSpeakingRef.current = false;
+    setIsApplicantSpeaking(false);
     answerStartedAtRef.current = Date.now();
     answerActiveRef.current = true;
     setIsAnswerRecording(true);
@@ -586,7 +620,7 @@ export default function Home() {
               <h1 className="question-reveal">{questions[questionIndex].prompt}</h1>
               {isQuestionSpeaking && <div className="audio-bars" aria-label={t("იკვრება კითხვის აუდიო")}>{[22, 42, 64, 34, 76, 48, 60, 28, 52].map((height, index) => <i key={index} style={{ height }} />)}</div>}
               <div className={`mic-live ${isQuestionSpeaking ? "muted-analysis" : ""}`}><span className="mic-icon" aria-hidden="true"><i /><b /></span><strong>{isQuestionSpeaking ? t("მოუსმინეთ") : t("უპასუხეთ კითხვას")}</strong></div>
-              <div className="applicant-wave-slot">{isAnswerRecording && <div className="applicant-wave" aria-label={t("თქვენი პასუხი იწერება")}>{[20, 38, 58, 30, 68, 44, 56, 26, 48].map((height, index) => <i key={index} style={{ height }} />)}</div>}</div>
+              <div className="applicant-wave-slot">{isAnswerRecording && <div className={`audio-bars applicant-audio-bars ${isApplicantSpeaking ? "active" : "idle"}`} aria-label={t("თქვენი პასუხი იწერება")}>{[22, 42, 64, 34, 76, 48, 60, 28, 52].map((height, index) => <i key={index} style={{ height }} />)}</div>}</div>
               <div className="question-controls"><button className="secondary-button" disabled={isQuestionSpeaking} onClick={speakQuestion}>↻ {t("კითხვის გამეორება")}</button><button className="primary-button finish-answer" disabled={isQuestionSpeaking} onClick={finishAnswer}>{questionIndex === questions.length - 1 ? t("ინტერვიუს დასრულება") : t("შემდეგი")} <span>→</span></button></div>
             </div>
           </div>
