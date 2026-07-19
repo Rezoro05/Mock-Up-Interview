@@ -1,4 +1,5 @@
 export const ENGLISH_BY_GEORGIAN: Record<string, string> = {
+  "მზად ხარ კონსულ ოფიცერთან ინტერვიუსთვის?": "Are you ready for an interview with a consular officer?",
   "აშშ-ის ვიზის საცდელი გასაუბრება ვირტუალურ კონსულ ოფიცერთან": "U.S. visa practice interview with a virtual consular officer",
   "მზად ხარ სამოგზაურო ინტერვიუსთვის?": "Are you ready for your travel interview?",
   "ივარჯიშეთ მშვიდად. იყავით გულწრფელი და გამოცადეთ საკუთარი თავი.": "Practice calmly. Be honest and test yourself.",

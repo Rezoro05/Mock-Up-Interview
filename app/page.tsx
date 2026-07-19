@@ -511,8 +511,7 @@ export default function Home() {
         <section className="landing-page">
           <div className="hero-copy">
             <p className="eyebrow"><span>●</span> {t("აშშ-ის ვიზის საცდელი გასაუბრება ვირტუალურ კონსულ ოფიცერთან")}</p>
-            <h1>{t("მზად ხარ სამოგზაურო ინტერვიუსთვის?")}</h1>
-            <p className="hero-lede">{t("ივარჯიშეთ მშვიდად. იყავით გულწრფელი და გამოცადეთ საკუთარი თავი.")}</p>
+            <h1>{t("მზად ხარ კონსულ ოფიცერთან ინტერვიუსთვის?")}</h1>
             <div className="hero-actions"><button className="primary-button" onClick={() => setStep("briefing")}>{t("გასაუბრების დაწყება")} <span>→</span></button><button className="text-button" onClick={() => document.getElementById("how")?.scrollIntoView({ behavior: "smooth" })}>{t("ნახეთ, როგორ მუშაობს")}</button></div>
           </div>
           <div className="hero-visual" aria-label={t("პრაქტიკული ინტერვიუს წინასწარი ნახვა")}>

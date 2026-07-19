@@ -47,6 +47,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid rgba(139, 197, 63
 .hero-copy h1 { margin: 0; max-width: 650px; font-size: clamp(48px, 6vw, 84px); line-height: .98; letter-spacing: -.055em; font-weight: 900; }
 .hero-lede { max-width: 590px; margin: 30px 0 34px; font-size: 19px; line-height: 1.65; color: var(--muted); }
 .hero-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 20px; }
+.hero-copy > .hero-actions { margin-top: 34px; }
 .primary-button, .secondary-button, .google-button { border: 0; border-radius: 14px; padding: 16px 22px; font-weight: 900; transition: transform .18s ease, box-shadow .18s ease, opacity .18s ease; text-decoration: none; }
 .primary-button { background: var(--brand-green); color: #173115; box-shadow: 0 12px 30px rgba(88,138,61,.18); }
 .primary-button span { margin-left: 14px; }
