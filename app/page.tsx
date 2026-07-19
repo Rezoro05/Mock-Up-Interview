@@ -182,7 +182,6 @@ export default function Home() {
   const [privacyAccepted, setPrivacyAccepted] = useState(false);
   const [demoSignedIn, setDemoSignedIn] = useState(false);
   const [isQuestionSpeaking, setIsQuestionSpeaking] = useState(false);
-  const [questionVisible, setQuestionVisible] = useState(false);
   const [answerSeconds, setAnswerSeconds] = useState(0);
   const [liveTranscript, setLiveTranscript] = useState("");
   const [answers, setAnswers] = useState<AnswerAnalysis[]>([]);
@@ -327,7 +326,6 @@ export default function Home() {
   const speakQuestion = useCallback(() => {
     if (step !== "interview") return;
     stopAnswerCapture();
-    setQuestionVisible(false);
     setLiveTranscript("");
     setAnswerSeconds(0);
     setIsQuestionSpeaking(true);
@@ -464,7 +462,7 @@ export default function Home() {
             <div className="trust-row" aria-label="Product benefits"><span>✓ Questions spoken first</span><span>✓ Continuous interview</span><span>✓ No invented scores</span></div>
           </div>
           <div className="hero-visual" aria-label="Practice interview preview">
-            <img className="hero-scene" src="/interview-key-visual.png" alt="Illustration of a visa applicant speaking with a consular officer" />
+            <img className="hero-scene" src="/hero-realistic.png" alt="Visa applicant speaking with a consular officer beside a United States flag" />
             <div className="mobile-hero-message">
               <strong>Practice the most important travel interview.</strong>
               <span>Start mock-up interview with eConsul of US</span>
@@ -483,7 +481,7 @@ export default function Home() {
 
       {step === "briefing" && (
         <section className="briefing-page">
-          <div className="briefing-visual"><img src="/embassy-preparation.png" alt="Watercolor illustration of a U.S. embassy" /><span>YOUR INTERVIEW IS ABOUT TO BEGIN</span></div>
+          <div className="briefing-visual"><img src="/embassy-realistic.png" alt="Visa applicant preparing to enter a United States consulate" /><span>YOUR INTERVIEW IS ABOUT TO BEGIN</span></div>
           <div className="briefing-copy">
             <p className="eyebrow"><span>02</span> Final preparation</p>
             <h1>Step into the interview prepared.</h1>
@@ -512,17 +510,15 @@ export default function Home() {
           <div className="main-progress"><span style={{ width: `${((questionIndex + 1) / questions.length) * 100}%` }} /></div>
           <div className="interview-room">
             <div className={`officer-panel ${isQuestionSpeaking ? "speaking" : ""}`}>
-              <img src="/consular-officer.png" alt="Illustrated male consular officer" />
-              <div className="officer-status"><span>{isQuestionSpeaking ? "●" : "✓"}</span><div><strong>{isQuestionSpeaking ? "Officer is speaking" : "Officer is listening"}</strong><small>Male English voice</small></div></div>
+              <img src="/consular-officer-realistic.png" alt="Consular officer conducting the mock interview" />
+              <div className="officer-status"><span>●</span><strong>{isQuestionSpeaking ? "Speaking" : "Listening"}</strong></div>
               {isQuestionSpeaking && <div className="portrait-wave" aria-hidden="true">{[18, 34, 52, 30, 62, 42, 24].map((height, index) => <i key={index} style={{ height }} />)}</div>}
             </div>
             <div className="question-stage">
-              <p className="question-label">CONSULAR OFFICER</p>
-              {isQuestionSpeaking ? <><h1>Listen to the question.</h1><div className="audio-bars" aria-label="Question audio is playing">{[22, 42, 64, 34, 76, 48, 60, 28, 52].map((height, index) => <i key={index} style={{ height }} />)}</div><p className="answer-prompt">The microphone is on, but your answer analysis starts after the officer finishes.</p></> : <>{questionVisible ? <h1 className="question-reveal">{questions[questionIndex].prompt}</h1> : <h1>Answer when you are ready.</h1>}<p className="answer-prompt">The officer is listening. Give a direct, truthful answer, then finish the answer.</p></>}
-              <div className="question-controls"><button className="secondary-button" onClick={speakQuestion}>↻ Replay question</button><button className="secondary-button" onClick={() => setQuestionVisible((visible) => !visible)}>{questionVisible ? "Hide question" : "Show question"}</button></div>
-              <div className={`mic-live ${isQuestionSpeaking ? "muted-analysis" : ""}`}><span className="mic-icon" aria-hidden="true"><i /><b /></span><div><strong>Microphone on · {isQuestionSpeaking ? "Waiting for the officer" : `${answerSeconds}s answer`}</strong><small>{recognitionSupported ? "Analyzing speech, relevance, pace, and delivery" : "Recording is active; speech analysis may not be supported in this browser"}</small></div></div>
-              {!isQuestionSpeaking && liveTranscript && <div className="transcript-live"><span>LIVE TRANSCRIPT</span><p>{liveTranscript}</p></div>}
-              <button className="primary-button finish-answer" disabled={isQuestionSpeaking} onClick={finishAnswer}>{questionIndex === questions.length - 1 ? "Finish interview" : "Finish answer"} <span>→</span></button>
+              <h1 className="question-reveal">{questions[questionIndex].prompt}</h1>
+              {isQuestionSpeaking && <div className="audio-bars" aria-label="Question audio is playing">{[22, 42, 64, 34, 76, 48, 60, 28, 52].map((height, index) => <i key={index} style={{ height }} />)}</div>}
+              <div className={`mic-live ${isQuestionSpeaking ? "muted-analysis" : ""}`}><span className="mic-icon" aria-hidden="true"><i /><b /></span><strong>{isQuestionSpeaking ? "Listen" : `Your answer · ${answerSeconds}s`}</strong></div>
+              <div className="question-controls"><button className="secondary-button" disabled={isQuestionSpeaking} onClick={speakQuestion}>↻ Hear again</button><button className="primary-button finish-answer" disabled={isQuestionSpeaking} onClick={finishAnswer}>{questionIndex === questions.length - 1 ? "Finish interview" : "Finish answer"} <span>→</span></button></div>
             </div>
           </div>
           <button className="quiet-exit" onClick={endPractice}>End practice</button>
