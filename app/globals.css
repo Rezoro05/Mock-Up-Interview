@@ -340,11 +340,16 @@ button:focus-visible, input:focus-visible { outline: 3px solid rgba(139, 197, 63
   .google-button { grid-column: 1 / -1; }
   .sign-in-card small { grid-column: 1 / -1; }
   .interview-page { min-height: calc(100vh - 68px); padding: 24px 20px; }
-  .question-stage h1 { font-size: 39px; }
-  .interview-room { gap: 10px; }
-  .officer-panel img { aspect-ratio: 16 / 9; }
-  .question-controls { width: 100%; }
-  .question-controls .secondary-button { flex: 1; }
+  .interview-room { gap: 14px; padding-top: 18px; }
+  .officer-panel { width: 100%; max-width: none; }
+  .officer-panel img { aspect-ratio: 4 / 5; object-position: center top; }
+  .question-stage { width: 100%; padding: 24px 0 8px; }
+  .question-stage h1 { font-size: clamp(30px, 8.5vw, 38px); }
+  .question-controls { width: 100%; flex-direction: column; align-items: stretch; }
+  .question-controls .finish-answer,
+  .question-controls .secondary-button { width: 100%; min-width: 0; min-height: 52px; display: inline-flex; align-items: center; justify-content: center; }
+  .question-controls .finish-answer { order: 1; }
+  .question-controls .secondary-button { order: 2; flex: none; }
   .mic-live { align-items: flex-start; }
   .qa-review-list article { grid-template-columns: 38px 1fr; }
   .processing-list { flex-direction: column; gap: 9px; }

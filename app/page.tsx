@@ -235,6 +235,8 @@ export default function Home() {
   const [questionIndex, setQuestionIndex] = useState(0);
   const [permissionError, setPermissionError] = useState("");
   const [privacyAccepted, setPrivacyAccepted] = useState(false);
+  const [microphoneReady, setMicrophoneReady] = useState(false);
+  const [isPreparingMicrophone, setIsPreparingMicrophone] = useState(false);
   const [demoSignedIn, setDemoSignedIn] = useState(false);
   const [isQuestionSpeaking, setIsQuestionSpeaking] = useState(false);
   const [isAnswerRecording, setIsAnswerRecording] = useState(false);
@@ -278,6 +280,8 @@ export default function Home() {
   const speechStartWatchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const speechEndWatchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const speechRunRef = useRef(0);
+  const microphoneRequestRef = useRef(0);
+  const skipAutomaticPlaybackRef = useRef(false);
   const autoFinishRef = useRef<() => void>(() => {});
 
   const [questions, setQuestions] = useState<QuestionSpec[]>(() => selectInterviewQuestions("B1/B2"));
@@ -303,9 +307,12 @@ export default function Home() {
   }, []);
 
   const releaseMicrophone = useCallback(() => {
+    microphoneRequestRef.current += 1;
     speechRunRef.current += 1;
     clearSpeechWatchdogs();
     speechUtteranceRef.current = null;
+    setMicrophoneReady(false);
+    setIsPreparingMicrophone(false);
     stopAnswerCapture();
     window.speechSynthesis?.cancel();
     if (recorderRef.current?.state === "recording") recorderRef.current.stop();
@@ -331,6 +338,7 @@ export default function Home() {
     const AudioContextClass = window.AudioContext ?? (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
     if (!AudioContextClass) return;
     const context = new AudioContextClass();
+    void context.resume();
     const source = context.createMediaStreamSource(stream);
     const analyser = context.createAnalyser();
     analyser.fftSize = 256;
@@ -436,8 +444,7 @@ export default function Home() {
     try { recognition.start(); } catch { setRecognitionSupported(false); }
   }, [getRecognitionConstructor]);
 
-  const speakQuestion = useCallback(() => {
-    if (step !== "interview") return;
+  const playQuestion = useCallback((prompt: string) => {
     stopAnswerCapture();
     setLiveTranscript("");
     setAnswerSeconds(0);
@@ -449,7 +456,6 @@ export default function Home() {
       return;
     }
 
-    const prompt = questions[questionIndex].prompt;
     const runId = speechRunRef.current + 1;
     speechRunRef.current = runId;
     let playbackStarted = false;
@@ -458,7 +464,7 @@ export default function Home() {
     utterance.lang = "en-US";
     const availableVoices = synthesis.getVoices();
     const voices = availableVoices.length ? availableVoices : speechVoicesRef.current;
-    const maleVoiceNames = ["microsoft guy", "microsoft davis", "microsoft christopher", "microsoft eric", "google uk english male", "aaron", "daniel", "alex", "david", "eddy", "evan", "nathan", "reed", "fred", "rishi", "rocko"];
+    const maleVoiceNames = ["microsoft guy", "microsoft davis", "microsoft christopher", "microsoft eric", "google uk english male", "aaron", "daniel", "alex", "david", "eddy", "evan", "nathan", "reed", "fred", "rishi", "rocko", "arthur", "albert", "gordon", "malcolm", "oliver", "liam", "noah", "james", "joey", "brian", "tom", "lee", "ralph"];
     const femaleVoiceNames = ["samantha", "victoria", "zira", "aria", "jenny", "ava", "allison", "susan", "karen", "moira", "tessa", "veena", "fiona"];
     const voiceScore = (voice: SpeechSynthesisVoice) => {
       const name = voice.name.toLowerCase();
@@ -468,10 +474,13 @@ export default function Home() {
       const qualityScore = /neural|natural|premium|enhanced/.test(name) ? 25 : 0;
       return languageScore + maleScore + qualityScore + (voice.localService ? 0 : 5) - femalePenalty;
     };
-    const maleVoice = [...voices].filter((voice) => voice.lang.toLowerCase().startsWith("en")).sort((left, right) => voiceScore(right) - voiceScore(left))[0];
+    const englishVoices = [...voices].filter((voice) => voice.lang.toLowerCase().startsWith("en"));
+    const identifiedMaleVoices = englishVoices.filter((voice) => maleVoiceNames.some((token) => voice.name.toLowerCase().includes(token)));
+    const nonFemaleVoices = englishVoices.filter((voice) => !femaleVoiceNames.some((token) => voice.name.toLowerCase().includes(token)));
+    const maleVoice = [...(identifiedMaleVoices.length ? identifiedMaleVoices : nonFemaleVoices)].sort((left, right) => voiceScore(right) - voiceScore(left))[0];
     if (maleVoice) utterance.voice = maleVoice;
     utterance.rate = 0.92;
-    utterance.pitch = 0.88;
+    utterance.pitch = 0.82;
     utterance.volume = 1;
 
     const finishPlayback = () => {
@@ -518,31 +527,90 @@ export default function Home() {
     } else {
       play();
     }
-  }, [clearSpeechWatchdogs, questionIndex, questions, startAnswerCapture, step, stopAnswerCapture]);
+  }, [clearSpeechWatchdogs, startAnswerCapture, stopAnswerCapture]);
+
+  const speakQuestion = useCallback(() => {
+    if (step !== "interview") return;
+    playQuestion(questions[questionIndex].prompt);
+  }, [playQuestion, questionIndex, questions, step]);
 
   useEffect(() => {
     if (step !== "interview") return;
+    if (skipAutomaticPlaybackRef.current) {
+      skipAutomaticPlaybackRef.current = false;
+      return;
+    }
     const playbackDelay = window.setTimeout(speakQuestion, 250);
     return () => window.clearTimeout(playbackDelay);
   }, [questionIndex, speakQuestion, step]);
 
-  const beginInterview = async () => {
+  const prepareMicrophone = useCallback(async () => {
+    const activeStream = streamRef.current;
+    if (activeStream?.getAudioTracks().some((track) => track.readyState === "live")) {
+      setMicrophoneReady(true);
+      return;
+    }
+    const requestId = microphoneRequestRef.current + 1;
+    microphoneRequestRef.current = requestId;
     setPermissionError("");
+    setIsPreparingMicrophone(true);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+      if (microphoneRequestRef.current !== requestId) {
+        stream.getTracks().forEach((track) => track.stop());
+        return;
+      }
       streamRef.current = stream;
-      const recorder = new MediaRecorder(stream);
-      recorderRef.current = recorder;
-      recorder.start();
-      startVoiceActivityAnalysis(stream);
-      setQuestions(selectInterviewQuestions("B1/B2"));
-      setAnswers([]);
-      setResponses([]);
-      setQuestionIndex(0);
-      setStep("interview");
+      setMicrophoneReady(true);
     } catch {
+      if (microphoneRequestRef.current !== requestId) return;
+      setPrivacyAccepted(false);
+      setMicrophoneReady(false);
       setPermissionError(t("ინტერვიუსთვის საჭიროა მიკროფონზე წვდომა. დართეთ წვდომა ბრაუზერში და სცადეთ ხელახლა."));
+    } finally {
+      if (microphoneRequestRef.current === requestId) setIsPreparingMicrophone(false);
     }
+  }, [t]);
+
+  const handlePrivacyChange = (accepted: boolean) => {
+    setPrivacyAccepted(accepted);
+    setPermissionError("");
+    if (accepted) {
+      void prepareMicrophone();
+      return;
+    }
+    microphoneRequestRef.current += 1;
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+    setMicrophoneReady(false);
+    setIsPreparingMicrophone(false);
+  };
+
+  const beginInterview = () => {
+    const stream = streamRef.current;
+    if (!stream?.getAudioTracks().some((track) => track.readyState === "live")) {
+      void prepareMicrophone();
+      return;
+    }
+    setPermissionError("");
+    if (typeof MediaRecorder !== "undefined") {
+      try {
+        const recorder = new MediaRecorder(stream);
+        recorderRef.current = recorder;
+        recorder.start();
+      } catch {
+        recorderRef.current = null;
+      }
+    }
+    startVoiceActivityAnalysis(stream);
+    const selectedQuestions = selectInterviewQuestions("B1/B2");
+    setQuestions(selectedQuestions);
+    setAnswers([]);
+    setResponses([]);
+    setQuestionIndex(0);
+    skipAutomaticPlaybackRef.current = true;
+    setStep("interview");
+    playQuestion(selectedQuestions[0].prompt);
   };
 
   const finishAnswer = () => {
@@ -588,6 +656,7 @@ export default function Home() {
 
   const endPractice = () => {
     releaseMicrophone();
+    setPrivacyAccepted(false);
     setStep("landing");
   };
 
@@ -596,6 +665,7 @@ export default function Home() {
     setQuestionIndex(0);
     setAnswers([]);
     setResponses([]);
+    setPrivacyAccepted(false);
     setStep("briefing");
   };
 
@@ -685,11 +755,11 @@ export default function Home() {
             <div className="briefing-confirmation">
               <h2>{t("სანამ დაიწყებთ")}</h2>
               {!demoSignedIn ? <div className="consent-card sign-in-card"><div className="google-mark" aria-hidden="true">G</div><div><h2>{t("შეინახეთ და მიიღეთ თქვენი შედეგი")}</h2><p>{t("გააგრძელეთ Google-ით, რათა თქვენი პრაქტიკის შედეგი შეინახოს და გაიგზავნოს თქვენს ელფოსტაზე.")}</p></div><button className="google-button" onClick={() => setDemoSignedIn(true)}>{t("Google-ით გაგრძელება")}</button><small>{t("პროტოტიპში შესვლა. უსაფრთხო Google კავშირი დაემატება ინტეგრაციის ფაზაში.")}</small></div> : <div className="signed-in-row"><span className="account-chip">AM</span><div><strong>{t("ავტორიზებული ხართ ამ პროტოტიპისთვის")}</strong><small>alex@example.com</small></div><b>✓</b></div>}
-              <div className="consent-card"><label className="check-row"><input type="checkbox" checked={privacyAccepted} onChange={(event) => setPrivacyAccepted(event.target.checked)} /><span><strong>{t("თანხმობას ვაცხადებ მონაცემების გამოყენების შესახებ, რაც ემსახურება eConsul-ის სერვისების გაუმჯობესებას.")}</strong><small>{t("მიკროფონი ჩართული რჩება მთელი ინტერვიუს განმავლობაში. ეს ბეტა ვერსია აანალიზებს საუბარს თქვენს ბრაუზერში და შლის ჩაწერილ აუდიოს სესიის დასრულებისას. თქვენი ტრანსკრიპტი და შედეგი შეიძლება შეინახოს თქვენს ანგარიშში და გამოიგზავნოს ელფოსტით.")}</small><em>{t("ეს არ არის ოფიციალური ინტერვიუ, ეს არის მხოლოდ საკონსულო ინტერვიუს სიმულაცია.")}</em></span></label></div>
+              <div className="consent-card"><label className="check-row"><input type="checkbox" checked={privacyAccepted} onChange={(event) => handlePrivacyChange(event.target.checked)} /><span><strong>{t("თანხმობას ვაცხადებ მონაცემების გამოყენების შესახებ, რაც ემსახურება eConsul-ის სერვისების გაუმჯობესებას.")}</strong><small>{t("მიკროფონი ჩართული რჩება მთელი ინტერვიუს განმავლობაში. ეს ბეტა ვერსია აანალიზებს საუბარს თქვენს ბრაუზერში და შლის ჩაწერილ აუდიოს სესიის დასრულებისას. თქვენი ტრანსკრიპტი და შედეგი შეიძლება შეინახოს თქვენს ანგარიშში და გამოიგზავნოს ელფოსტით.")}</small><em>{t("ეს არ არის ოფიციალური ინტერვიუ, ეს არის მხოლოდ საკონსულო ინტერვიუს სიმულაცია.")}</em></span></label></div>
               <div className="ready-note"><span>◉</span><div><strong>{t("დაწყებამდე იპოვეთ წყნარი ადგილი")}</strong><small>{t("მოუსმინეთ ყველა კითხვას, უპასუხეთ ბუნებრივად და დაასრულეთ თითოეული პასუხი შემდეგზე გადასვლით.")}</small></div></div>
             </div>
             {permissionError && <p className="permission-error" role="alert">{permissionError}</p>}
-            <div className="briefing-actions"><button className="back-button" onClick={() => setStep("landing")}>← {t("უკან")}</button><button className="primary-button" disabled={!privacyAccepted || !demoSignedIn} onClick={beginInterview}>{t("ინტერვიუს დაწყება")} <span>→</span></button></div>
+            <div className="briefing-actions"><button className="back-button" onClick={() => { releaseMicrophone(); setPrivacyAccepted(false); setStep("landing"); }}>← {t("უკან")}</button><button className="primary-button" aria-busy={isPreparingMicrophone} disabled={!privacyAccepted || !demoSignedIn || !microphoneReady || isPreparingMicrophone} onClick={beginInterview}>{t("ინტერვიუს დაწყება")} <span>→</span></button></div>
           </div>
         </section>
       )}
