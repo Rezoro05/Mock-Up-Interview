@@ -71,6 +71,37 @@ const interviewQuestions: Record<VisaType, QuestionSpec[]> = {
   ],
 };
 
+const mandatoryQuestions: QuestionSpec[] = [
+  {
+    prompt: "Where will you stay in the United States?",
+    criteria: [
+      ["hotel", "hostel", "apartment", "campus", "dorm", "family", "friend", "relative", "housing", "accommodation"],
+      ["address", "street", "city", "new york", "california", "florida", "washington", "boston", "chicago", "with my", "reservation"],
+    ],
+  },
+  {
+    prompt: "Where do you work?",
+    criteria: [
+      ["work at", "work for", "employed by", "company", "organization", "business", "school", "university", "hospital", "government"],
+      ["manager", "engineer", "teacher", "developer", "doctor", "owner", "student", "position", "role", "responsible"],
+    ],
+  },
+];
+
+function shuffled<T>(items: T[]) {
+  const result = [...items];
+  for (let index = result.length - 1; index > 0; index -= 1) {
+    const randomIndex = Math.floor(Math.random() * (index + 1));
+    [result[index], result[randomIndex]] = [result[randomIndex], result[index]];
+  }
+  return result;
+}
+
+function selectInterviewQuestions(visa: VisaType) {
+  const randomVisaQuestions = shuffled(interviewQuestions[visa]).slice(0, 3);
+  return shuffled([...mandatoryQuestions, ...randomVisaQuestions]);
+}
+
 const visaOptions: Array<{ type: VisaType; title: string; detail: string; tag: string }> = [
   { type: "B1/B2", title: "Visitor visa", detail: "Tourism, family visits, or short business travel", tag: "Most popular" },
   { type: "F-1", title: "Student visa", detail: "University, college, or academic study", tag: "Study" },
@@ -78,6 +109,7 @@ const visaOptions: Array<{ type: VisaType; title: string; detail: string; tag: s
 ];
 
 const fillerPattern = /\b(um+|uh+|erm+|like|you know|basically|actually|sort of|kind of)\b/gi;
+const evasivePattern = /\b(i do not know|i don't know|not sure|maybe|probably|i guess|whatever)\b/i;
 
 function clamp(value: number, minimum = 0, maximum = 100) {
   return Math.min(maximum, Math.max(minimum, value));
@@ -99,26 +131,28 @@ function analyzeAnswer(question: QuestionSpec, transcript: string, duration: num
   const relevance = Math.round((matchedCriteria / question.criteria.length) * 100);
 
   let lengthQuality = 100;
-  if (words.length < 4) lengthQuality = 10;
-  else if (words.length < 9) lengthQuality = 45;
-  else if (words.length > 85) lengthQuality = 45;
-  else if (words.length > 60) lengthQuality = 70;
+  if (words.length < 6) lengthQuality = 5;
+  else if (words.length < 12) lengthQuality = 38;
+  else if (words.length > 75) lengthQuality = 42;
+  else if (words.length > 55) lengthQuality = 68;
 
   let paceQuality = 100;
-  if (wordsPerMinute < 55 || wordsPerMinute > 220) paceQuality = 25;
-  else if (wordsPerMinute < 80 || wordsPerMinute > 180) paceQuality = 60;
+  if (wordsPerMinute < 65 || wordsPerMinute > 205) paceQuality = 20;
+  else if (wordsPerMinute < 85 || wordsPerMinute > 175) paceQuality = 55;
 
-  const fillerQuality = fillerCount === 0 ? 100 : fillerCount <= 2 ? 72 : fillerCount <= 4 ? 45 : 20;
+  const fillerQuality = fillerCount === 0 ? 100 : fillerCount === 1 ? 78 : fillerCount <= 3 ? 52 : 18;
   const clarity = Math.round(lengthQuality * 0.4 + paceQuality * 0.35 + fillerQuality * 0.25);
-  const recognitionConfidence = confidence === null || confidence <= 0 ? 45 : confidence * 100;
+  const recognitionConfidence = confidence === null || confidence <= 0 ? 35 : confidence * 100;
   const delivery = Math.round(clamp(recognitionConfidence * 0.65 + Math.min(100, voiceRatio * 180) * 0.35));
-  const completeness = Math.round(lengthQuality * 0.55 + relevance * 0.45);
+  const completeness = Math.round(lengthQuality * 0.45 + relevance * 0.55);
 
-  let score = Math.round(relevance * 0.5 + clarity * 0.2 + delivery * 0.15 + completeness * 0.15);
+  let score = Math.round(relevance * 0.55 + clarity * 0.15 + delivery * 0.1 + completeness * 0.2);
   if (!cleanTranscript) score = 0;
-  else if (words.length < 4) score = Math.min(score, 20);
-  else if (relevance === 0) score = Math.min(score, 30);
-  else if (relevance < 50) score = Math.min(score, 55);
+  else if (words.length < 6) score = Math.min(score, 15);
+  else if (evasivePattern.test(lower)) score = Math.min(score, 20);
+  else if (relevance === 0) score = Math.min(score, 20);
+  else if (relevance < 50) score = Math.min(score, 40);
+  else if (matchedCriteria < question.criteria.length) score = Math.min(score, 68);
 
   return {
     question: question.prompt,
@@ -169,7 +203,7 @@ export default function Home() {
   const animationFrameRef = useRef<number | null>(null);
   const speechVoicesRef = useRef<SpeechSynthesisVoice[]>([]);
 
-  const questions = useMemo(() => interviewQuestions[visa], [visa]);
+  const [questions, setQuestions] = useState<QuestionSpec[]>(() => [...mandatoryQuestions, ...interviewQuestions["B1/B2"].slice(0, 3)]);
 
   const stopAnswerCapture = useCallback(() => {
     answerActiveRef.current = false;
@@ -329,6 +363,7 @@ export default function Home() {
       recorderRef.current = recorder;
       recorder.start();
       startVoiceActivityAnalysis(stream);
+      setQuestions(selectInterviewQuestions(visa));
       setAnswers([]);
       setQuestionIndex(0);
       setSessionSeconds(0);
@@ -396,17 +431,17 @@ export default function Home() {
     const completeness = average("completeness");
     const averageFillers = answers.reduce((sum, answer) => sum + answer.fillerCount, 0) / answers.length;
     const strengths: Array<{ title: string; detail: string }> = [];
-    if (relevance >= 72) strengths.push({ title: "Relevant answers", detail: "Most answers addressed the exact question and included expected details." });
-    if (clarity >= 72) strengths.push({ title: "Clear structure", detail: "Your answers were a useful length and your speaking pace was understandable." });
-    if (delivery >= 68) strengths.push({ title: "Steady delivery", detail: "Your voice activity and recognition confidence were reasonably consistent." });
+    if (relevance >= 80) strengths.push({ title: "Relevant answers", detail: "Most answers addressed the exact question and included expected details." });
+    if (clarity >= 78) strengths.push({ title: "Clear structure", detail: "Your answers were a useful length and your speaking pace was understandable." });
+    if (delivery >= 75) strengths.push({ title: "Steady delivery", detail: "Your voice activity and recognition confidence were reasonably consistent." });
     if (!strengths.length) strengths.push({ title: "Interview completed", detail: "You stayed with the full interview. Now focus on making each answer specific and direct." });
 
     const improvements: Array<{ title: string; detail: string }> = [];
-    if (relevance < 70) improvements.push({ title: "Answer the exact question", detail: "Several answers missed expected facts. Give specific names, dates, costs, responsibilities, or plans where relevant." });
-    if (completeness < 70) improvements.push({ title: "Use complete short answers", detail: "Avoid one-word replies. Give one direct sentence followed by one supporting detail." });
-    if (clarity < 70) improvements.push({ title: "Improve pace and structure", detail: "Keep answers around 10–45 seconds and use simple sentences instead of long explanations." });
-    if (delivery < 65) improvements.push({ title: "Sound more controlled", detail: "Speak slightly louder, reduce long pauses, and keep a steady pace. This is delivery feedback, not a personality judgment." });
-    if (averageFillers > 2) improvements.push({ title: "Reduce filler words", detail: "Pause silently instead of using “um,” “uh,” “like,” or “you know.”" });
+    if (relevance < 78) improvements.push({ title: "Answer the exact question", detail: "A consular officer may challenge answers that omit names, dates, locations, costs, responsibilities, or return plans." });
+    if (completeness < 75) improvements.push({ title: "Support every answer", detail: "Give one direct answer and at least one concrete supporting fact. Vague or unsupported claims are scored cautiously." });
+    if (clarity < 75) improvements.push({ title: "Improve pace and structure", detail: "Keep answers around 10–45 seconds and use simple sentences instead of long explanations." });
+    if (delivery < 70) improvements.push({ title: "Sound more controlled", detail: "Speak slightly louder, reduce long pauses, and keep a steady pace. This is delivery feedback, not a personality judgment." });
+    if (averageFillers > 1) improvements.push({ title: "Reduce filler words", detail: "Pause silently instead of using “um,” “uh,” “like,” or “you know.”" });
     if (!improvements.length) improvements.push({ title: "Add sharper evidence", detail: "Your delivery was solid. Improve further by adding exact dates, amounts, names, and return plans." });
 
     return { available: true, score, relevance, clarity, delivery, completeness, strengths: strengths.slice(0, 3), improvements: improvements.slice(0, 3) };
@@ -500,7 +535,7 @@ export default function Home() {
 
       {step === "results" && (
         <section className="results-page">
-          <div className={`results-hero ${!result.available ? "no-score" : ""}`}><div><p className="eyebrow"><span>{result.available ? "✓" : "!"}</span> Evidence-based review</p><h1>{result.available ? (result.score >= 75 ? "A solid practice, with details still to sharpen." : result.score >= 55 ? "Your answers need more precision." : "This interview needs serious improvement.") : "No reliable score was issued."}</h1><p>{result.available ? "This result is deliberately strict. Irrelevant, very short, unclear, or unsupported answers are capped." : "Speech transcription was unavailable, so eConsul refused to invent a percentage."}</p></div><div className="score-ring" style={{ "--score": `${result.score * 3.6}deg` } as React.CSSProperties}><div><strong>{result.available ? `${result.score}%` : "—"}</strong><span>{result.available ? "Practice score" : "No evidence"}</span></div></div></div>
+          <div className={`results-hero ${!result.available ? "no-score" : result.score < 40 ? "result-red" : result.score < 80 ? "result-yellow" : "result-green"}`}><div><p className="eyebrow"><span>{result.available ? "✓" : "!"}</span> Evidence-based review</p><h1>{result.available ? (result.score >= 80 ? "A solid practice, with details still to sharpen." : result.score >= 40 ? "Your answers need more precision." : "This interview needs serious improvement.") : "No reliable score was issued."}</h1><p>{result.available ? "This result is deliberately strict. Irrelevant, very short, vague, evasive, or unsupported answers are capped." : "Speech transcription was unavailable, so eConsul refused to invent a percentage."}</p></div><div className="score-ring" style={{ "--score": `${result.score * 3.6}deg` } as React.CSSProperties}><div><strong>{result.available ? `${result.score}%` : "—"}</strong><span>{result.available ? "Practice score" : "No evidence"}</span></div></div></div>
           <div className="result-grid"><article className="result-card strengths"><div className="result-title"><span>✓</span><h2>What the evidence supports</h2></div><ul>{result.strengths.length ? result.strengths.map((item) => <li key={item.title}><strong>{item.title}</strong><small>{item.detail}</small></li>) : <li><strong>No positive claim without evidence</strong><small>The app will not praise answers it could not hear and analyze.</small></li>}</ul></article><article className="result-card improvements"><div className="result-title"><span>↗</span><h2>Needs improvement</h2></div><ul>{result.improvements.map((item) => <li key={item.title}><strong>{item.title}</strong><small>{item.detail}</small></li>)}</ul></article></div>
           {result.available && <div className="breakdown-card"><div><h2>Strict score breakdown</h2><p>Delivery confidence is an approximation based on speech-recognition confidence and audible voice activity—not a judgment about your personality.</p></div>{[{ label: "Relevance", value: result.relevance }, { label: "Clarity", value: result.clarity }, { label: "Delivery", value: result.delivery }, { label: "Complete", value: result.completeness }].map((item) => <div className="score-row" key={item.label}><span>{item.label}</span><i><b style={{ width: `${item.value}%` }} /></i><strong>{item.value}</strong></div>)}</div>}
           <div className="transcript-review"><div><h2>What the app heard</h2><p>Review this before trusting the score. A wrong transcript can produce a wrong evaluation.</p></div>{answers.map((answer, index) => <details key={answer.question}><summary><span>Q{index + 1}</span><strong>{answer.score}%</strong>{answer.transcript || "No answer detected"}</summary><div><p><b>Question:</b> {answer.question}</p><p><b>Transcript:</b> {answer.transcript || "No usable speech was detected."}</p><small>{answer.duration}s · {answer.wordCount} words · {answer.wordsPerMinute} words/min · {answer.fillerCount} filler words</small></div></details>)}</div>
