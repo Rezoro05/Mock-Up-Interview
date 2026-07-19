@@ -110,7 +110,7 @@ export const ENGLISH_BY_GEORGIAN: Record<string, string> = {
   "მომზადების უფრო რეალისტური გზა.": "A more realistic way to prepare.", // home.how_section_headline
   "მოუსმინეთ": "Listen", // interview.listen_instruction
   "მოუსმინეთ სრულ კითხვას. საჭიროების შემთხვევაში, კიდევ ერთხელ მოუსმინეთ.": "Listen to the full question. Replay it once if needed.", // briefing.step_1_text
-  "მოუსმინეთ, უპასუხეთ, გააგრძელეთ.": "Listen, answer, continue.", // home.image_caption_text
+  "მოუსმინეთ, უპასუხეთ, გააგრძელეთ.": "Listen, answer, improve.", // home.image_caption_text
   "მტკიცე გადმოცემა": "Steady delivery", // results.strength_delivery_title
   "მტკიცებულებებზე დაფუძნებული შეფასება": "Evidence-based review", // results.review_label
   "მტკიცებულებების შემოწმება...": "Checking the evidence...", // processing.headline
