@@ -25,6 +25,11 @@ type AnswerAnalysis = {
   score: number;
 };
 
+type InterviewResponse = {
+  question: string;
+  answer: string;
+};
+
 type RecognitionResultLike = {
   isFinal: boolean;
   0: { transcript: string; confidence: number };
@@ -193,6 +198,7 @@ export default function Home() {
   const [answerSeconds, setAnswerSeconds] = useState(0);
   const [liveTranscript, setLiveTranscript] = useState("");
   const [answers, setAnswers] = useState<AnswerAnalysis[]>([]);
+  const [responses, setResponses] = useState<InterviewResponse[]>([]);
   const [recognitionSupported, setRecognitionSupported] = useState(true);
 
   const recorderRef = useRef<MediaRecorder | null>(null);
@@ -370,6 +376,7 @@ export default function Home() {
       startVoiceActivityAnalysis(stream);
       setQuestions(selectInterviewQuestions("B1/B2"));
       setAnswers([]);
+      setResponses([]);
       setQuestionIndex(0);
       setStep("interview");
     } catch {
@@ -386,6 +393,7 @@ export default function Home() {
     const transcript = transcriptRef.current || liveTranscript;
     const currentQuestion = questions[questionIndex];
     stopAnswerCapture();
+    setResponses((current) => [...current, { question: currentQuestion.prompt, answer: transcript.trim() }]);
 
     if (currentQuestion.scored === false) {
       setQuestionIndex((current) => current + 1);
@@ -426,6 +434,7 @@ export default function Home() {
     releaseMicrophone();
     setQuestionIndex(0);
     setAnswers([]);
+    setResponses([]);
     setStep("briefing");
   };
 
@@ -552,9 +561,9 @@ export default function Home() {
           <div className={`results-hero ${!result.available ? "no-score" : result.score < 40 ? "result-red" : result.score < 80 ? "result-yellow" : "result-green"}`}><div><p className="eyebrow"><span>{result.available ? "✓" : "!"}</span> Evidence-based review</p><h1>{result.available ? (result.score >= 80 ? "A solid practice, with details still to sharpen." : result.score >= 40 ? "Your answers need more precision." : "This interview needs serious improvement.") : "No reliable score was issued."}</h1><p>{result.available ? "This result is deliberately strict. Irrelevant, very short, vague, evasive, or unsupported answers are capped." : "Speech transcription was unavailable, so eConsul refused to invent a percentage."}</p></div><div className="score-ring" style={{ "--score": `${result.score * 3.6}deg` } as React.CSSProperties}><div><strong>{result.available ? `${result.score}%` : "—"}</strong><span>{result.available ? "Practice score" : "No evidence"}</span></div></div></div>
           <div className="result-grid"><article className="result-card strengths"><div className="result-title"><span>✓</span><h2>What the evidence supports</h2></div><ul>{result.strengths.length ? result.strengths.map((item) => <li key={item.title}><strong>{item.title}</strong><small>{item.detail}</small></li>) : <li><strong>No positive claim without evidence</strong><small>The app will not praise answers it could not hear and analyze.</small></li>}</ul></article><article className="result-card improvements"><div className="result-title"><span>↗</span><h2>Needs improvement</h2></div><ul>{result.improvements.map((item) => <li key={item.title}><strong>{item.title}</strong><small>{item.detail}</small></li>)}</ul></article></div>
           {result.available && <div className="breakdown-card"><div><h2>Strict score breakdown</h2><p>Delivery confidence is an approximation based on speech-recognition confidence and audible voice activity—not a judgment about your personality.</p></div>{[{ label: "Relevance", value: result.relevance }, { label: "Clarity", value: result.clarity }, { label: "Delivery", value: result.delivery }, { label: "Complete", value: result.completeness }].map((item) => <div className="score-row" key={item.label}><span>{item.label}</span><i><b style={{ width: `${item.value}%` }} /></i><strong>{item.value}</strong></div>)}</div>}
-          <div className="transcript-review"><div><h2>What the app heard</h2><p>Review this before trusting the score. A wrong transcript can produce a wrong evaluation.</p></div>{answers.map((answer, index) => <details key={answer.question}><summary><span>Q{index + 1}</span><strong>{answer.score}%</strong>{answer.transcript || "No answer detected"}</summary><div><p><b>Question:</b> {answer.question}</p><p><b>Transcript:</b> {answer.transcript || "No usable speech was detected."}</p><small>{answer.duration}s · {answer.wordCount} words · {answer.wordsPerMinute} words/min · {answer.fillerCount} filler words</small></div></details>)}</div>
+          <div className="transcript-review"><div><h2>Your interview: questions and answers</h2><p>Review exactly what was asked and what the app heard from each response.</p></div><div className="qa-review-list">{responses.map((response, index) => { const analysis = answers.find((answer) => answer.question === response.question); return <article key={`${response.question}-${index}`}><span>Q{index + 1}</span><div><strong>{response.question}</strong><p>{response.answer || "No usable speech was detected."}</p>{analysis && <small>{analysis.score}% answer score · {analysis.duration}s · {analysis.wordCount} words · {analysis.wordsPerMinute} words/min</small>}</div></article>; })}</div></div>
           <div className="email-note"><span>✉</span><div><strong>Your result is ready</strong><small>In the connected version, the evidence and transcript review—not a preset score—will be emailed to you.</small></div></div>
-          <div className="result-actions"><button className="primary-button" onClick={restart}>Practice again <span>→</span></button><button className="secondary-button" onClick={() => window.print()}>Save this result</button></div>
+          <div className="result-actions"><a className="primary-button consultation-button" href="https://wa.me/995596114488?text=Hello%20eConsul%2C%20I%27d%20like%20to%20book%20a%20consultation%20for%20expert%20preparation%20for%20my%20U.S.%20visa%20interview." target="_blank" rel="noopener noreferrer">Book expert interview preparation on WhatsApp <span>→</span></a><button className="secondary-button" onClick={restart}>Practice again</button></div>
           <p className="legal-note">eConsul is an independent educational practice tool. This score measures the captured practice answer only. It is not a visa decision, approval prediction, psychological assessment, or legal advice.</p>
         </section>
       )}

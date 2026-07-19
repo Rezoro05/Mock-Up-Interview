@@ -40,7 +40,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid rgba(139, 197, 63
 .hero-copy h1 { margin: 0; max-width: 650px; font-size: clamp(48px, 6vw, 84px); line-height: .98; letter-spacing: -.055em; font-weight: 900; }
 .hero-lede { max-width: 590px; margin: 30px 0 34px; font-size: 19px; line-height: 1.65; color: var(--muted); }
 .hero-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 20px; }
-.primary-button, .secondary-button, .google-button { border: 0; border-radius: 14px; padding: 16px 22px; font-weight: 900; transition: transform .18s ease, box-shadow .18s ease, opacity .18s ease; }
+.primary-button, .secondary-button, .google-button { border: 0; border-radius: 14px; padding: 16px 22px; font-weight: 900; transition: transform .18s ease, box-shadow .18s ease, opacity .18s ease; text-decoration: none; }
 .primary-button { background: var(--brand-green); color: #173115; box-shadow: 0 12px 30px rgba(88,138,61,.18); }
 .primary-button span { margin-left: 14px; }
 .primary-button:hover, .google-button:hover { transform: translateY(-2px); box-shadow: 0 16px 34px rgba(44,86,41,.22); }
@@ -248,18 +248,16 @@ button:focus-visible, input:focus-visible { outline: 3px solid rgba(139, 197, 63
 .transcript-review > div:first-child { margin-bottom: 18px; }
 .transcript-review h2 { margin: 0; }
 .transcript-review > div:first-child p { color: var(--muted); font-size: 13px; margin: 6px 0 0; }
-.transcript-review details { border-top: 1px solid var(--line); }
-.transcript-review summary { cursor: pointer; display: grid; grid-template-columns: 42px 56px 1fr; gap: 10px; align-items: center; padding: 16px 0; list-style: none; }
-.transcript-review summary::-webkit-details-marker { display: none; }
-.transcript-review summary span { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 10px; background: var(--cream); font-size: 12px; font-weight: 900; }
-.transcript-review summary strong { color: var(--deep-green); }
-.transcript-review summary { color: var(--muted); font-size: 13px; }
-.transcript-review details > div { padding: 0 0 18px 98px; }
-.transcript-review details p { margin: 7px 0; line-height: 1.5; }
-.transcript-review details small { color: var(--muted); }
+.qa-review-list article { display: grid; grid-template-columns: 42px 1fr; gap: 14px; padding: 20px 0; border-top: 1px solid var(--line); }
+.qa-review-list article > span { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 10px; background: var(--cream); color: var(--deep-green); font-size: 12px; font-weight: 900; }
+.qa-review-list article > div { min-width: 0; }
+.qa-review-list strong { display: block; color: var(--charcoal); line-height: 1.45; }
+.qa-review-list p { margin: 8px 0; color: var(--muted); line-height: 1.55; }
+.qa-review-list small { color: var(--mid-green); font-weight: 800; }
 .email-note { margin-top: 18px; }
 .email-note > span { font-size: 24px; }
-.result-actions { display: flex; gap: 12px; justify-content: center; margin-top: 28px; }
+.result-actions { display: flex; gap: 12px; justify-content: center; align-items: stretch; margin-top: 28px; }
+.consultation-button { display: inline-flex; align-items: center; justify-content: center; text-align: center; }
 .secondary-button { background: transparent; border: 1px solid var(--charcoal); }
 .legal-note { text-align: center; color: var(--muted); max-width: 760px; margin: 28px auto 0; font-size: 11px; line-height: 1.55; }
 
@@ -322,8 +320,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid rgba(139, 197, 63
   .question-controls { width: 100%; }
   .question-controls .secondary-button { flex: 1; }
   .mic-live { align-items: flex-start; }
-  .transcript-review summary { grid-template-columns: 36px 50px 1fr; }
-  .transcript-review details > div { padding-left: 0; }
+  .qa-review-list article { grid-template-columns: 38px 1fr; }
   .processing-list { flex-direction: column; gap: 9px; }
   .results-page { padding-top: 28px; }
   .score-ring { width: 160px; height: 160px; }
