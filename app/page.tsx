@@ -645,7 +645,7 @@ export default function Home() {
               <h1 className="question-reveal">{questions[questionIndex].prompt}</h1>
               {isQuestionSpeaking && <div className="audio-bars" aria-label={t("იკვრება კითხვის აუდიო")}>{[22, 42, 64, 34, 76, 48, 60, 28, 52].map((height, index) => <i key={index} style={{ height }} />)}</div>}
               <div className={`mic-live ${isQuestionSpeaking ? "muted-analysis" : ""}`}><span className="mic-icon" aria-hidden="true"><i /><b /></span><strong>{isQuestionSpeaking ? t("მოუსმინეთ") : t("უპასუხეთ კითხვას")}</strong></div>
-              <div className="applicant-wave-slot">{isAnswerRecording && <div className={`audio-bars applicant-audio-bars ${isApplicantSpeaking ? "active" : "idle"}`} aria-label={t("თქვენი პასუხი იწერება")}>{[22, 42, 64, 34, 76, 48, 60, 28, 52].map((height, index) => <i key={index} style={{ height }} />)}</div>}</div>
+              <div className="applicant-wave-slot">{isAnswerRecording && isApplicantSpeaking && <div className="audio-bars applicant-audio-bars" aria-label={t("თქვენი პასუხი იწერება")}>{[22, 42, 64, 34, 76, 48, 60, 28, 52].map((height, index) => <i key={index} style={{ height }} />)}</div>}</div>
               <div className="question-controls"><button className="secondary-button" disabled={isQuestionSpeaking} onClick={speakQuestion}>↻ {t("კითხვის გამეორება")}</button><button className="primary-button finish-answer" disabled={isQuestionSpeaking} onClick={finishAnswer}>{questionIndex === questions.length - 1 ? t("ინტერვიუს დასრულება") : t("შემდეგი")} <span>→</span></button></div>
             </div>
           </div>

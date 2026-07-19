@@ -186,10 +186,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid rgba(139, 197, 63
 .mic-live.muted-analysis { opacity: .72; }
 .applicant-wave-slot { height: 76px; display: grid; place-items: center; }
 .applicant-audio-bars { margin-top: 0; }
-.applicant-audio-bars i { background: #56b7e9; animation: none; transform: scaleY(.18); opacity: .28; transition: transform .18s ease, opacity .18s ease; }
-.applicant-audio-bars.active i { animation: audioBar .62s ease-in-out infinite alternate; transform: scaleY(1); opacity: 1; }
-.applicant-audio-bars.active i:nth-child(2n) { animation-duration: .48s; }
-.applicant-audio-bars.active i:nth-child(3n) { animation-duration: .76s; }
+.applicant-audio-bars i { background: #56b7e9; }
 .transcript-live { width: min(100%, 660px); text-align: left; background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 16px 18px; margin-top: 12px; }
 .transcript-live span { font-size: 10px; letter-spacing: .12em; font-weight: 900; color: var(--mid-green); }
 .transcript-live p { margin: 8px 0 0; color: var(--muted); line-height: 1.5; }
