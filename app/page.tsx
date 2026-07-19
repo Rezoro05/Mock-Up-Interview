@@ -3,11 +3,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type VisaType = "B1/B2" | "F-1" | "J-1";
-type Step = "landing" | "visa" | "briefing" | "interview" | "processing" | "results";
+type Step = "landing" | "briefing" | "interview" | "processing" | "results";
 
 type QuestionSpec = {
   prompt: string;
   criteria: string[][];
+  scored?: boolean;
 };
 
 type AnswerAnalysis = {
@@ -71,6 +72,12 @@ const interviewQuestions: Record<VisaType, QuestionSpec[]> = {
   ],
 };
 
+const warmupQuestion: QuestionSpec = {
+  prompt: "Hello. How are you today?",
+  criteria: [],
+  scored: false,
+};
+
 const mandatoryQuestions: QuestionSpec[] = [
   {
     prompt: "What's the purpose of your visit?",
@@ -106,26 +113,22 @@ function shuffled<T>(items: T[]) {
 
 function selectInterviewQuestions(visa: VisaType) {
   const randomVisaQuestions = shuffled(interviewQuestions[visa]).slice(0, 2);
-  return shuffled([...mandatoryQuestions, ...randomVisaQuestions]);
+  const [purposeQuestion, ...otherMandatoryQuestions] = mandatoryQuestions;
+  return [warmupQuestion, purposeQuestion, ...shuffled([...otherMandatoryQuestions, ...randomVisaQuestions])];
 }
 
-const visaOptions: Array<{ type: VisaType; title: string; detail: string; tag: string }> = [
-  { type: "B1/B2", title: "Visitor visa", detail: "Tourism, family visits, or short business travel", tag: "Most popular" },
-  { type: "F-1", title: "Student visa", detail: "University, college, or academic study", tag: "Study" },
-  { type: "J-1", title: "Exchange visitor", detail: "Exchange, internship, trainee, or cultural program", tag: "Exchange" },
-];
+function inferVisaType(transcript: string): VisaType {
+  const lower = transcript.toLowerCase();
+  if (/\b(university|college|student|study|degree|academic|tuition|campus)\b/.test(lower)) return "F-1";
+  if (/\b(exchange|internship|intern|training|trainee|research|cultural program|j-?1)\b/.test(lower)) return "J-1";
+  return "B1/B2";
+}
 
 const fillerPattern = /\b(um+|uh+|erm+|like|you know|basically|actually|sort of|kind of)\b/gi;
 const evasivePattern = /\b(i do not know|i don't know|not sure|maybe|probably|i guess|whatever)\b/i;
 
 function clamp(value: number, minimum = 0, maximum = 100) {
   return Math.min(maximum, Math.max(minimum, value));
-}
-
-function formatTime(totalSeconds: number) {
-  const minutes = Math.floor(totalSeconds / 60).toString().padStart(2, "0");
-  const seconds = (totalSeconds % 60).toString().padStart(2, "0");
-  return `${minutes}:${seconds}`;
 }
 
 function analyzeAnswer(question: QuestionSpec, transcript: string, duration: number, confidence: number | null, voiceRatio: number): AnswerAnalysis {
@@ -182,9 +185,7 @@ function BrandMark() {
 
 export default function Home() {
   const [step, setStep] = useState<Step>("landing");
-  const [visa, setVisa] = useState<VisaType>("B1/B2");
   const [questionIndex, setQuestionIndex] = useState(0);
-  const [sessionSeconds, setSessionSeconds] = useState(0);
   const [permissionError, setPermissionError] = useState("");
   const [privacyAccepted, setPrivacyAccepted] = useState(false);
   const [demoSignedIn, setDemoSignedIn] = useState(false);
@@ -197,7 +198,6 @@ export default function Home() {
   const recorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const recognitionRef = useRef<RecognitionLike | null>(null);
-  const sessionTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const answerTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const answerStartedAtRef = useRef(0);
   const answerActiveRef = useRef(false);
@@ -208,10 +208,9 @@ export default function Home() {
   const audioContextRef = useRef<AudioContext | null>(null);
   const animationFrameRef = useRef<number | null>(null);
   const speechVoicesRef = useRef<SpeechSynthesisVoice[]>([]);
-  const introductionPendingRef = useRef(true);
   const autoFinishRef = useRef<() => void>(() => {});
 
-  const [questions, setQuestions] = useState<QuestionSpec[]>(() => [...mandatoryQuestions, ...interviewQuestions["B1/B2"].slice(0, 2)]);
+  const [questions, setQuestions] = useState<QuestionSpec[]>(() => selectInterviewQuestions("B1/B2"));
 
   const stopAnswerCapture = useCallback(() => {
     answerActiveRef.current = false;
@@ -221,14 +220,8 @@ export default function Home() {
     recognitionRef.current = null;
   }, []);
 
-  const stopSessionTimer = useCallback(() => {
-    if (sessionTimerRef.current) clearInterval(sessionTimerRef.current);
-    sessionTimerRef.current = null;
-  }, []);
-
   const releaseMicrophone = useCallback(() => {
     stopAnswerCapture();
-    stopSessionTimer();
     window.speechSynthesis?.cancel();
     if (recorderRef.current?.state === "recording") recorderRef.current.stop();
     recorderRef.current = null;
@@ -238,7 +231,7 @@ export default function Home() {
     animationFrameRef.current = null;
     void audioContextRef.current?.close();
     audioContextRef.current = null;
-  }, [stopAnswerCapture, stopSessionTimer]);
+  }, [stopAnswerCapture]);
 
   useEffect(() => () => releaseMicrophone(), [releaseMicrophone]);
 
@@ -339,19 +332,21 @@ export default function Home() {
     setAnswerSeconds(0);
     setIsQuestionSpeaking(true);
     window.speechSynthesis.cancel();
-    const opening = introductionPendingRef.current ? "Hello. How are you today? Let's begin. " : "";
-    introductionPendingRef.current = false;
-    const utterance = new SpeechSynthesisUtterance(`${opening}${questions[questionIndex].prompt}`);
+    const utterance = new SpeechSynthesisUtterance(questions[questionIndex].prompt);
     utterance.lang = "en-US";
     const availableVoices = window.speechSynthesis.getVoices();
     const voices = availableVoices.length ? availableVoices : speechVoicesRef.current;
-    const naturalVoiceNames = ["premium", "enhanced", "natural", "neural", "aaron", "daniel", "alex", "david", "arthur"];
-    const maleVoice = voices.find((voice) => voice.lang.toLowerCase().startsWith("en-us") && naturalVoiceNames.some((name) => voice.name.toLowerCase().includes(name)))
-      ?? voices.find((voice) => voice.lang.toLowerCase().startsWith("en-us"))
-      ?? voices.find((voice) => voice.lang.toLowerCase().startsWith("en"));
+    const naturalVoiceNames = ["microsoft guy", "google us english", "neural", "natural", "premium", "enhanced", "aaron", "daniel", "alex", "david", "eddy", "evan", "nathan", "reed"];
+    const voiceScore = (voice: SpeechSynthesisVoice) => {
+      const name = voice.name.toLowerCase();
+      const languageScore = voice.lang.toLowerCase().startsWith("en-us") ? 30 : voice.lang.toLowerCase().startsWith("en") ? 10 : 0;
+      const qualityScore = naturalVoiceNames.reduce((score, token, index) => name.includes(token) ? Math.max(score, 40 - index) : score, 0);
+      return languageScore + qualityScore + (voice.localService ? 0 : 5);
+    };
+    const maleVoice = [...voices].filter((voice) => voice.lang.toLowerCase().startsWith("en")).sort((left, right) => voiceScore(right) - voiceScore(left))[0];
     if (maleVoice) utterance.voice = maleVoice;
-    utterance.rate = 0.96;
-    utterance.pitch = 0.94;
+    utterance.rate = 0.93;
+    utterance.pitch = 0.98;
     utterance.volume = 1;
     utterance.onend = startAnswerCapture;
     utterance.onerror = startAnswerCapture;
@@ -373,12 +368,9 @@ export default function Home() {
       recorderRef.current = recorder;
       recorder.start();
       startVoiceActivityAnalysis(stream);
-      introductionPendingRef.current = true;
-      setQuestions(selectInterviewQuestions(visa));
+      setQuestions(selectInterviewQuestions("B1/B2"));
       setAnswers([]);
       setQuestionIndex(0);
-      setSessionSeconds(0);
-      sessionTimerRef.current = setInterval(() => setSessionSeconds((value) => value + 1), 1000);
       setStep("interview");
     } catch {
       setPermissionError("Microphone access is required for the interview. Allow access in your browser and try again.");
@@ -392,10 +384,21 @@ export default function Home() {
     const confidence = confidenceSamples.length ? confidenceSamples.reduce((sum, value) => sum + value, 0) / confidenceSamples.length : null;
     const voiceRatio = totalFramesRef.current ? voiceFramesRef.current / totalFramesRef.current : 0;
     const transcript = transcriptRef.current || liveTranscript;
-    const analysis = analyzeAnswer(questions[questionIndex], transcript, duration, confidence, voiceRatio);
+    const currentQuestion = questions[questionIndex];
     stopAnswerCapture();
+
+    if (currentQuestion.scored === false) {
+      setQuestionIndex((current) => current + 1);
+      return;
+    }
+
+    const analysis = analyzeAnswer(currentQuestion, transcript, duration, confidence, voiceRatio);
     const updatedAnswers = [...answers, analysis];
     setAnswers(updatedAnswers);
+
+    if (currentQuestion.prompt === mandatoryQuestions[0].prompt) {
+      setQuestions(selectInterviewQuestions(inferVisaType(transcript)));
+    }
 
     if (questionIndex < questions.length - 1) {
       setQuestionIndex((current) => current + 1);
@@ -416,15 +419,14 @@ export default function Home() {
 
   const endPractice = () => {
     releaseMicrophone();
-    setStep("visa");
+    setStep("landing");
   };
 
   const restart = () => {
     releaseMicrophone();
     setQuestionIndex(0);
-    setSessionSeconds(0);
     setAnswers([]);
-    setStep("visa");
+    setStep("briefing");
   };
 
   const result = useMemo(() => {
@@ -478,7 +480,7 @@ export default function Home() {
             <p className="eyebrow"><span>●</span> U.S. visa interview practice</p>
             <h1>Two minutes can feel like everything.</h1>
             <p className="hero-lede">Practice answering clearly, calmly, and honestly before your U.S. consular interview. Get strict, evidence-based feedback in under five minutes.</p>
-            <div className="hero-actions"><button className="primary-button" onClick={() => setStep("visa")}>Start a practice interview <span>→</span></button><button className="text-button" onClick={() => document.getElementById("how")?.scrollIntoView({ behavior: "smooth" })}>See how it works</button></div>
+            <div className="hero-actions"><button className="primary-button" onClick={() => setStep("briefing")}>Start a practice interview <span>→</span></button><button className="text-button" onClick={() => document.getElementById("how")?.scrollIntoView({ behavior: "smooth" })}>See how it works</button></div>
             <div className="trust-row" aria-label="Product benefits"><span>✓ Questions spoken first</span><span>✓ Continuous interview</span><span>✓ No invented scores</span></div>
           </div>
           <div className="hero-visual" aria-label="Practice interview preview">
@@ -493,10 +495,6 @@ export default function Home() {
           <section className="how-section" id="how"><p className="section-kicker">HOW IT WORKS</p><h2>A more realistic way to prepare.</h2><div className="steps-grid"><article><b>01</b><h3>Listen first</h3><p>The officer asks each question aloud. Replay it or reveal the text only when needed.</p></article><article><b>02</b><h3>Stay in the interview</h3><p>The timer and microphone continue through the full session.</p></article><article><b>03</b><h3>Get strict feedback</h3><p>Your result uses only captured speech, relevance, pace, fillers, and delivery evidence.</p></article></div></section>
           <footer className="site-footer"><BrandMark /><p>Independent practice tool. Not affiliated with the U.S. government. Results do not predict a visa decision.</p></footer>
         </section>
-      )}
-
-      {step === "visa" && (
-        <section className="flow-page"><div className="flow-heading"><p className="eyebrow"><span>01</span> Set up your practice</p><h1>Which interview are you preparing for?</h1><p>Choose one path. Your questions will match the purpose of your trip.</p></div><div className="visa-grid">{visaOptions.map((option) => <button key={option.type} className={`visa-card ${visa === option.type ? "selected" : ""}`} onClick={() => setVisa(option.type)}><span className="visa-tag">{option.tag}</span><strong>{option.type}</strong><h2>{option.title}</h2><p>{option.detail}</p><i>{visa === option.type ? "✓" : "→"}</i></button>)}</div><div className="flow-actions"><button className="back-button" onClick={() => setStep("landing")}>← Back</button><button className="primary-button" onClick={() => setStep("briefing")}>Continue <span>→</span></button></div></section>
       )}
 
       {step === "briefing" && (
@@ -519,15 +517,15 @@ export default function Home() {
               <div className="ready-note"><span>◉</span><div><strong>Find a quiet place before starting</strong><small>The timer begins immediately. Listen to every question, answer naturally, and finish each answer before moving on.</small></div></div>
             </div>
             {permissionError && <p className="permission-error" role="alert">{permissionError}</p>}
-            <div className="briefing-actions"><button className="back-button" onClick={() => setStep("visa")}>← Back</button><button className="primary-button" disabled={!privacyAccepted || !demoSignedIn} onClick={beginInterview}>Start interview <span>→</span></button></div>
+            <div className="briefing-actions"><button className="back-button" onClick={() => setStep("landing")}>← Back</button><button className="primary-button" disabled={!privacyAccepted || !demoSignedIn} onClick={beginInterview}>Start interview <span>→</span></button></div>
           </div>
         </section>
       )}
 
       {step === "interview" && (
         <section className="interview-page">
-          <div className="interview-meta"><span>{visa} practice</span><strong>Question {questionIndex + 1} of {questions.length}</strong><span className="session-clock"><i /> {formatTime(sessionSeconds)}</span></div>
-          <div className="main-progress"><span style={{ width: `${((questionIndex + 1) / questions.length) * 100}%` }} /></div>
+          <div className="interview-meta"><strong>{questions[questionIndex].scored === false ? "Warm-up" : `Question ${answers.length + 1} of ${questions.filter((question) => question.scored !== false).length}`}</strong></div>
+          <div className="answer-timeline" aria-label="Answer time remaining"><span style={{ width: `${Math.max(0, 100 - (answerSeconds / 180) * 100)}%` }} /></div>
           <div className="interview-room">
             <div className={`officer-panel ${isQuestionSpeaking ? "speaking" : ""}`}>
               <img src="/consular-officer-solo.png" alt="Consular officer conducting the mock interview" />
@@ -537,7 +535,7 @@ export default function Home() {
             <div className="question-stage">
               <h1 className="question-reveal">{questions[questionIndex].prompt}</h1>
               {isQuestionSpeaking && <div className="audio-bars" aria-label="Question audio is playing">{[22, 42, 64, 34, 76, 48, 60, 28, 52].map((height, index) => <i key={index} style={{ height }} />)}</div>}
-              <div className={`mic-live ${isQuestionSpeaking ? "muted-analysis" : ""}`}><span className="mic-icon" aria-hidden="true"><i /><b /></span><strong>{isQuestionSpeaking ? "Listen" : `Your answer · ${formatTime(answerSeconds)} / 03:00`}</strong></div>
+              <div className={`mic-live ${isQuestionSpeaking ? "muted-analysis" : ""}`}><span className="mic-icon" aria-hidden="true"><i /><b /></span><strong>{isQuestionSpeaking ? "Listen" : "Answer now"}</strong></div>
               <div className="question-controls"><button className="secondary-button" disabled={isQuestionSpeaking} onClick={speakQuestion}>↻ Hear again</button><button className="primary-button finish-answer" disabled={isQuestionSpeaking} onClick={finishAnswer}>{questionIndex === questions.length - 1 ? "Finish interview" : "Finish answer"} <span>→</span></button></div>
             </div>
           </div>
