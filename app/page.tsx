@@ -431,7 +431,6 @@ export default function Home() {
           <div className="hero-visual" aria-label="Practice interview preview">
             <img className="hero-scene" src="/interview-key-visual.png" alt="Illustration of a visa applicant speaking with a consular officer" />
             <div className="hero-scene-caption"><span className="live-dot" /><div><strong>Practice the real rhythm</strong><small>Listen, answer, continue.</small></div></div>
-            <div className="floating-score"><strong>5</strong><span>spoken questions</span></div>
           </div>
           <div className="brand-strip"><span>Practice the questions that matter most</span><strong>B1/B2</strong><strong>F-1</strong><strong>J-1</strong></div>
           <section className="how-section" id="how"><p className="section-kicker">HOW IT WORKS</p><h2>A more realistic way to prepare.</h2><div className="steps-grid"><article><b>01</b><h3>Listen first</h3><p>The officer asks each question aloud. Replay it or reveal the text only when needed.</p></article><article><b>02</b><h3>Stay in the interview</h3><p>The timer and microphone continue through the full session.</p></article><article><b>03</b><h3>Get strict feedback</h3><p>Your result uses only captured speech, relevance, pace, fillers, and delivery evidence.</p></article></div></section>
