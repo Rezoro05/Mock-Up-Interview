@@ -471,7 +471,7 @@ export default function Home() {
     <main className="site-shell">
       <header className="site-header">
         <button className="logo-button" onClick={() => setStep("landing")} aria-label="Go to home"><BrandMark /></button>
-        <div className="header-right"><span className="demo-pill"><span /> Strict beta</span>{demoSignedIn && <span className="account-chip">AM</span>}</div>
+        <div className="header-right"><span className="demo-pill"><span /> Beta</span>{demoSignedIn && <span className="account-chip">AM</span>}</div>
       </header>
 
       {step === "landing" && (
