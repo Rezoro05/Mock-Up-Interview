@@ -27,6 +27,11 @@ button:focus-visible, input:focus-visible { outline: 3px solid rgba(139, 197, 63
 .brand-logo { width: 130px; height: auto; display: block; }
 .site-header .brand-logo { filter: brightness(0) invert(1); }
 .header-right { display: flex; align-items: center; gap: 14px; }
+.language-toggle { display: inline-flex; align-items: center; padding: 3px; border: 1px solid rgba(255,255,255,.22); border-radius: 999px; background: rgba(255,255,255,.08); }
+.language-toggle button { min-width: 58px; height: 34px; padding: 0 9px; border: 0; border-radius: 999px; background: transparent; color: rgba(255,255,255,.72); display: inline-flex; align-items: center; justify-content: center; gap: 5px; transition: background .18s ease, color .18s ease; }
+.language-toggle button span { font-size: 17px; line-height: 1; }
+.language-toggle button small { font-size: 9px; font-weight: 900; letter-spacing: .05em; }
+.language-toggle button.active { background: #fff; color: var(--deep-green); box-shadow: 0 2px 8px rgba(12,34,12,.18); }
 .demo-pill { display: inline-flex; align-items: center; gap: 7px; padding: 7px 11px; border: 1px solid rgba(255,255,255,.22); border-radius: 999px; font-size: 12px; font-weight: 800; color: #fff; background: rgba(255,255,255,.1); }
 .demo-pill span { width: 7px; height: 7px; border-radius: 50%; background: var(--brand-green); box-shadow: 0 0 0 4px rgba(139,197,63,.14); }
 .account-chip { width: 36px; height: 36px; border-radius: 50%; background: var(--brand-green); color: var(--deep-green); display: inline-grid; place-items: center; font-weight: 900; font-size: 12px; }
@@ -284,6 +289,10 @@ button:focus-visible, input:focus-visible { outline: 3px solid rgba(139, 197, 63
   .site-header { height: 68px; padding: 0 var(--page-gutter); }
   .brand-logo { width: 110px; }
   .demo-pill { font-size: 10px; }
+  .header-right { gap: 8px; }
+  .language-toggle button { min-width: 42px; padding: 0 7px; }
+  .language-toggle button small { display: none; }
+  .demo-pill { padding: 6px 8px; }
   .hero-visual { order: -1; min-height: 0; aspect-ratio: 16 / 10; padding: 0; }
   .hero-visual::before { background: linear-gradient(180deg, transparent 30%, rgba(23,49,21,.9) 100%); }
   .hero-scene { object-position: center; }
