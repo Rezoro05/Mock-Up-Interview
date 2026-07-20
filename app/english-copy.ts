@@ -170,7 +170,7 @@ export const ENGLISH_BY_GEORGIAN: Record<string, string> = {
   "გაუქმება": "Cancel",
   "პრობლემის გაგზავნა": "Send report",
   "იგზავნება...": "Sending...",
-  "პრობლემის შესახებ შეტყობინება გაიგზავნა.": "Your problem report was sent.",
+  "შეტყობინება წარმატებით გაიგზავნა! გმადლობთ უკუკავშირისთვის.": "The message has been sent successfully! Thank you for your feedback.",
   "შეტყობინება ვერ გაიგზავნა. გთხოვთ, სცადოთ ხელახლა.": "The report could not be sent. Please try again.",
   "eConsul-ის პრობლემის შეტყობინება": "eConsul problem report",
   "გამარჯობა eConsul, მსურს პრობლემის შეტყობინება:": "Hello eConsul, I would like to report a problem:",

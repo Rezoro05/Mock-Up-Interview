@@ -279,6 +279,15 @@ export default function Home() {
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, [reportOpen]);
 
+  useEffect(() => {
+    if (reportStatus !== "sent") return;
+    const closeTimer = window.setTimeout(() => {
+      setReportOpen(false);
+      setReportStatus("idle");
+    }, 3000);
+    return () => window.clearTimeout(closeTimer);
+  }, [reportStatus]);
+
   const recorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const recognitionRef = useRef<RecognitionLike | null>(null);
@@ -858,7 +867,7 @@ export default function Home() {
             <label htmlFor="problem-report">{t("რა პრობლემა შეგექმნათ?")}</label>
             <textarea id="problem-report" autoFocus value={reportMessage} onChange={(event) => { setReportMessage(event.target.value); if (reportStatus !== "sending") setReportStatus("idle"); }} placeholder={t("აღწერეთ პრობლემა...")} rows={5} disabled={reportStatus === "sending" || reportStatus === "sent"} />
             <div className={`report-status ${reportStatus}`} role="status" aria-live="polite">
-              {reportStatus === "sent" && <span>✓ {t("პრობლემის შესახებ შეტყობინება გაიგზავნა.")}</span>}
+              {reportStatus === "sent" && <span>✓ {t("შეტყობინება წარმატებით გაიგზავნა! გმადლობთ უკუკავშირისთვის.")}</span>}
               {reportStatus === "error" && <span>{t("შეტყობინება ვერ გაიგზავნა. გთხოვთ, სცადოთ ხელახლა.")}</span>}
             </div>
             <div className="report-dialog-actions">
