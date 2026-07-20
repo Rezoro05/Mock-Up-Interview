@@ -827,12 +827,12 @@ export default function Home() {
             <button className="report-dialog-close" onClick={() => setReportOpen(false)} aria-label={t("დახურვა")}>×</button>
             <p className="section-kicker">eConsul</p>
             <h2 id="report-dialog-title">{t("შეგვატყობინეთ პრობლემის შესახებ")}</h2>
-            <p>{t("მოკლედ აღწერეთ, რა არ მუშაობს. თქვენი შეტყობინება გაიხსნება WhatsApp-ში და პირდაპირ eConsul-ს გაეგზავნება.")}</p>
+            <p>{t("მოკლედ აღწერეთ, რა არ მუშაობს. თქვენი შეტყობინება გაიხსნება ელფოსტის აპლიკაციაში და გაეგზავნება eConsul-ს.")}</p>
             <label htmlFor="problem-report">{t("რა პრობლემა შეგექმნათ?")}</label>
             <textarea id="problem-report" autoFocus value={reportMessage} onChange={(event) => setReportMessage(event.target.value)} placeholder={t("აღწერეთ პრობლემა...")} rows={5} />
             <div className="report-dialog-actions">
               <button className="secondary-button" onClick={() => setReportOpen(false)}>{t("გაუქმება")}</button>
-              <a className={`primary-button ${reportMessage.trim() ? "" : "disabled"}`} href={reportMessage.trim() ? `https://wa.me/995596114488?text=${encodeURIComponent(`${t("გამარჯობა eConsul, მსურს პრობლემის შეტყობინება:")}\n\n${reportMessage.trim()}`)}` : undefined} target="_blank" rel="noopener noreferrer" aria-disabled={!reportMessage.trim()} onClick={(event) => { if (!reportMessage.trim()) event.preventDefault(); }}>{t("გაგზავნა WhatsApp-ზე")} <span>→</span></a>
+              <a className={`primary-button ${reportMessage.trim() ? "" : "disabled"}`} href={reportMessage.trim() ? `mailto:rkupa2011@gmail.com?subject=${encodeURIComponent(t("eConsul-ის პრობლემის შეტყობინება"))}&body=${encodeURIComponent(`${t("გამარჯობა eConsul, მსურს პრობლემის შეტყობინება:")}\n\n${reportMessage.trim()}`)}` : undefined} aria-disabled={!reportMessage.trim()} onClick={(event) => { if (!reportMessage.trim()) event.preventDefault(); }}>{t("ელფოსტით გაგზავნა")} <span>→</span></a>
             </div>
           </section>
         </div>
