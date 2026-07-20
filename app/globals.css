@@ -17,9 +17,9 @@
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 body { margin: 0; background: var(--cream); color: var(--charcoal); font-family: var(--font-nunito), "Nunito", Arial, sans-serif; }
-button, input { font: inherit; }
+button, input, textarea { font: inherit; }
 button { cursor: pointer; }
-button:focus-visible, input:focus-visible { outline: 3px solid rgba(139, 197, 63, 0.48); outline-offset: 3px; }
+button:focus-visible, input:focus-visible, textarea:focus-visible, a:focus-visible { outline: 3px solid rgba(139, 197, 63, 0.48); outline-offset: 3px; }
 
 .site-shell { min-height: 100vh; overflow: hidden; }
 .site-header { height: 78px; padding: 0 var(--page-gutter); display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,.14); background: rgba(44,86,41,.97); position: relative; z-index: 20; }
@@ -29,6 +29,10 @@ button:focus-visible, input:focus-visible { outline: 3px solid rgba(139, 197, 63
 .site-header .brand-logo { filter: brightness(0) invert(1); }
 .beta-badge { padding: 5px 8px 4px; border-radius: 7px; background: var(--brand-green); color: #173115; font-size: 9px; line-height: 1; font-weight: 900; letter-spacing: .09em; text-transform: uppercase; box-shadow: 0 5px 14px rgba(12,34,12,.2); transform: translateY(-1px) rotate(-3deg); }
 .header-right { display: flex; align-items: center; gap: 14px; }
+.report-problem-button { height: 40px; padding: 0 13px 0 8px; border: 1px solid rgba(255,255,255,.24); border-radius: 999px; background: rgba(255,255,255,.1); color: #fff; display: inline-flex; align-items: center; gap: 8px; font-weight: 900; transition: background .18s ease, transform .18s ease; }
+.report-problem-button:hover { background: rgba(255,255,255,.18); transform: translateY(-1px); }
+.report-problem-button span { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: var(--brand-green); color: var(--deep-green); font-size: 13px; }
+.report-problem-button small { font-size: 11px; }
 .language-toggle { display: inline-flex; align-items: center; padding: 3px; border: 1px solid rgba(255,255,255,.22); border-radius: 999px; background: rgba(255,255,255,.08); }
 .language-toggle button { min-width: 38px; height: 34px; padding: 0 8px; border: 0; border-radius: 999px; background: transparent; color: rgba(255,255,255,.72); display: inline-flex; align-items: center; justify-content: center; gap: 5px; transition: min-width .18s ease, background .18s ease, color .18s ease; }
 .language-toggle button span { font-size: 17px; line-height: 1; }
@@ -39,6 +43,18 @@ button:focus-visible, input:focus-visible { outline: 3px solid rgba(139, 197, 63
 .demo-pill { display: inline-flex; align-items: center; gap: 7px; padding: 7px 11px; border: 1px solid rgba(255,255,255,.22); border-radius: 999px; font-size: 12px; font-weight: 800; color: #fff; background: rgba(255,255,255,.1); }
 .demo-pill span { width: 7px; height: 7px; border-radius: 50%; background: var(--brand-green); box-shadow: 0 0 0 4px rgba(139,197,63,.14); }
 .account-chip { width: 36px; height: 36px; border-radius: 50%; background: var(--brand-green); color: var(--deep-green); display: inline-grid; place-items: center; font-weight: 900; font-size: 12px; }
+
+.report-dialog-backdrop { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 22px; background: rgba(10,24,9,.72); backdrop-filter: blur(8px); }
+.report-dialog { width: min(100%, 560px); position: relative; padding: clamp(26px, 5vw, 42px); border-radius: 28px; background: #fff; box-shadow: 0 32px 90px rgba(7,20,7,.42); }
+.report-dialog .section-kicker { margin-bottom: 12px; color: var(--mid-green); }
+.report-dialog h2 { margin: 0; font-size: clamp(28px, 5vw, 40px); line-height: 1.08; letter-spacing: -.035em; }
+.report-dialog > p:not(.section-kicker) { margin: 16px 0 24px; color: var(--muted); line-height: 1.6; }
+.report-dialog label { display: block; margin-bottom: 9px; font-size: 13px; font-weight: 900; }
+.report-dialog textarea { width: 100%; resize: vertical; min-height: 126px; padding: 15px 16px; border: 1px solid var(--line); border-radius: 14px; background: #fafbf5; color: var(--charcoal); line-height: 1.5; }
+.report-dialog-close { position: absolute; top: 16px; right: 16px; width: 36px; height: 36px; border: 0; border-radius: 50%; background: #eef1e7; color: var(--charcoal); font-size: 24px; line-height: 1; }
+.report-dialog-actions { display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-top: 22px; }
+.report-dialog-actions a { display: inline-flex; align-items: center; justify-content: center; }
+.report-dialog-actions .disabled { opacity: .42; cursor: not-allowed; pointer-events: none; }
 
 .landing-page { min-height: calc(100vh - 78px); background: #f7f6ec; }
 .landing-hero { min-height: calc(100vh - 78px); padding: clamp(22px, 3vw, 46px) var(--page-gutter); position: relative; overflow: hidden; }
@@ -303,6 +319,8 @@ button:focus-visible, input:focus-visible { outline: 3px solid rgba(139, 197, 63
   .brand-logo { width: 110px; }
   .demo-pill { font-size: 10px; }
   .header-right { gap: 8px; }
+  .report-problem-button { width: 38px; height: 38px; padding: 0; justify-content: center; }
+  .report-problem-button small { display: none; }
   .language-toggle button { min-width: 36px; padding: 0 7px; }
   .language-toggle button.active { min-width: 58px; }
   .demo-pill { padding: 6px 8px; }
@@ -361,6 +379,11 @@ button:focus-visible, input:focus-visible { outline: 3px solid rgba(139, 197, 63
   .score-ring > div { width: 126px; height: 126px; }
   .score-row { grid-template-columns: 94px 1fr 30px; }
   .result-actions { flex-direction: column; }
+  .report-dialog-backdrop { padding: 14px; align-items: end; }
+  .report-dialog { padding: 28px 20px 20px; border-radius: 24px 24px 12px 12px; }
+  .report-dialog-actions { flex-direction: column-reverse; align-items: stretch; }
+  .report-dialog-actions .secondary-button,
+  .report-dialog-actions .primary-button { width: 100%; min-height: 50px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

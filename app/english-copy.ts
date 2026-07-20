@@ -28,7 +28,7 @@ export const ENGLISH_BY_GEORGIAN: Record<string, string> = {
   "შემდეგი": "Next",
   "ინტერვიუს შეწყვეტა": "Stop interview",
   "გამოცდილებაზე დაფუძნებული შეფასება": "Experience-based assessment",
-  "პასუხები არის შეუსაბამო, ძალიან მოკლე ან ბუნდოვანი. თავის არიდებისას ან დაუსაბუთებელი პასუხების გაცემით ქულები ნულდება.": "Answers that are irrelevant, too short, vague, evasive, or unsupported receive zero points.",
+  "პასუხებზე თავის არიდებით ან დაუსაბუთებელი პასუხების გაცემით ქულები ნულდება.": "Evasive or unsupported answers receive zero points.",
   "შედეგები": "Results",
   "ზუსტად უპასუხეთ კითხვას": "Answer the question precisely",
   "ქულების გადანაწილება": "Score breakdown",
@@ -126,7 +126,7 @@ export const ENGLISH_BY_GEORGIAN: Record<string, string> = {
   "პასუხის დასრულება": "Finish answer", // interview.finish_answer_button
   "პასუხისთვის დარჩენილი დრო": "Answer time remaining", // interview.time_remaining_accessibility_label
   "პრაქტიკის დასრულება": "End practice", // interview.end_practice_button
-  "პრაქტიკის ქულა": "Practice score", // results.practice_score
+  "გასაუბრების ქულა": "Interview score", // results.interview_score
   "პრაქტიკული ინტერვიუს დაწყება": "Start a practice interview", // home.start_button
   "პრაქტიკული ინტერვიუს წინასწარი ნახვა": "Practice interview preview", // home.hero_accessibility_label
   "პროდუქტის უპირატესობები": "Product benefits", // home.benefits_accessibility_label
@@ -161,4 +161,13 @@ export const ENGLISH_BY_GEORGIAN: Record<string, string> = {
   "წინასწარ განსაზღვრული ქულა არ გამოიყენება. შედეგი გამოითვლება იმის მიხედვით, რაც ბრაუზერმა რეალურად გაიგონა.": "No preset score is used. The result is calculated from what the browser actually heard.", // processing.explanation
   "ხელახლა მოსმენა": "Hear again", // interview.hear_again_button
   "ჯერ მოუსმინეთ": "Listen first", // home.step_1_title
+  "პრობლემის შეტყობინება": "Report a problem",
+  "შეგვატყობინეთ პრობლემის შესახებ": "Tell us about a problem",
+  "მოკლედ აღწერეთ, რა არ მუშაობს. თქვენი შეტყობინება გაიხსნება WhatsApp-ში და პირდაპირ eConsul-ს გაეგზავნება.": "Briefly describe what is not working. Your message will open in WhatsApp and be sent directly to eConsul.",
+  "რა პრობლემა შეგექმნათ?": "What problem did you encounter?",
+  "აღწერეთ პრობლემა...": "Describe the problem...",
+  "დახურვა": "Close",
+  "გაუქმება": "Cancel",
+  "გაგზავნა WhatsApp-ზე": "Send on WhatsApp",
+  "გამარჯობა eConsul, მსურს პრობლემის შეტყობინება:": "Hello eConsul, I would like to report a problem:",
 };

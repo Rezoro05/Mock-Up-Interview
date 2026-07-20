@@ -249,6 +249,8 @@ export default function Home() {
   const [answers, setAnswers] = useState<AnswerAnalysis[]>([]);
   const [responses, setResponses] = useState<InterviewResponse[]>([]);
   const [recognitionSupported, setRecognitionSupported] = useState(true);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportMessage, setReportMessage] = useState("");
   const t = useCallback((georgian: string) => {
     if (language === "en") return ENGLISH_BY_GEORGIAN[georgian] ?? georgian;
     if (language === "ru") return RUSSIAN_BY_GEORGIAN[georgian] ?? georgian;
@@ -265,6 +267,15 @@ export default function Home() {
     document.documentElement.lang = language;
     document.title = language === "en" ? "eConsul | U.S. Visa Practice Interview" : language === "ru" ? "eConsul | Тренировка собеседования на визу США" : "eConsul | აშშ-ის ვიზის საცდელი გასაუბრება";
   }, [language]);
+
+  useEffect(() => {
+    if (!reportOpen) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setReportOpen(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [reportOpen]);
 
   const recorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -720,6 +731,7 @@ export default function Home() {
       <header className="site-header">
         <div className="header-brand"><button className="logo-button" onClick={() => setStep("landing")} aria-label={t("მთავარ გვერდზე გადასვლა")}><BrandMark /></button><span className="beta-badge">{t("ბეტა")}</span></div>
         <div className="header-right">
+          <button className="report-problem-button" onClick={() => setReportOpen(true)} aria-label={t("პრობლემის შეტყობინება")} title={t("პრობლემის შეტყობინება")}><span aria-hidden="true">!</span><small>{t("პრობლემის შეტყობინება")}</small></button>
           <div className="language-toggle" role="group" aria-label="Language / ენა / Язык">
             <button className={language === "en" ? "active" : ""} onClick={() => setLanguage("en")} aria-pressed={language === "en"} title="English"><span aria-hidden="true">🇺🇸</span><small>ENG</small></button>
             <button className={language === "ka" ? "active" : ""} onClick={() => setLanguage("ka")} aria-pressed={language === "ka"} title="ქართული"><span aria-hidden="true">🇬🇪</span><small>GEO</small></button>
@@ -800,13 +812,30 @@ export default function Home() {
 
       {step === "results" && (
         <section className="results-page">
-          <div className={`results-hero ${!result.available ? "no-score" : result.score < 40 ? "result-red" : result.score < 80 ? "result-yellow" : "result-green"}`}><div><p className="eyebrow"><span>{result.available ? "✓" : "!"}</span> {t("გამოცდილებაზე დაფუძნებული შეფასება")}</p><h1>{result.available ? (result.score >= 80 ? t("მყარი პრაქტიკა, თუმცა დეტალები ჯერ კიდევ დასახვეწია.") : result.score >= 40 ? t("თქვენს პასუხებს მეტი სიზუსტე სჭირდება.") : t("ეს ინტერვიუ სერიოზულ გაუმჯობესებას საჭიროებს.")) : t("სანდო ქულა არ გაცემულა.")}</h1><p>{result.available ? t("პასუხები არის შეუსაბამო, ძალიან მოკლე ან ბუნდოვანი. თავის არიდებისას ან დაუსაბუთებელი პასუხების გაცემით ქულები ნულდება.") : t("საუბრის ტრანსკრიფცია მიუწვდომელი იყო, ამიტომ eConsul-მა უარი თქვა პროცენტის გამოგონებაზე.")}</p></div><div className="score-ring" style={{ "--score": `${result.score * 3.6}deg` } as React.CSSProperties}><div><strong>{result.available ? `${result.score}%` : "—"}</strong><span>{result.available ? t("პრაქტიკის ქულა") : t("არ არის მტკიცებულება")}</span></div></div></div>
+          <div className={`results-hero ${!result.available ? "no-score" : result.score < 40 ? "result-red" : result.score < 80 ? "result-yellow" : "result-green"}`}><div><p className="eyebrow"><span>{result.available ? "✓" : "!"}</span> {t("გამოცდილებაზე დაფუძნებული შეფასება")}</p><h1>{result.available ? (result.score >= 80 ? t("მყარი პრაქტიკა, თუმცა დეტალები ჯერ კიდევ დასახვეწია.") : result.score >= 40 ? t("თქვენს პასუხებს მეტი სიზუსტე სჭირდება.") : t("ეს ინტერვიუ სერიოზულ გაუმჯობესებას საჭიროებს.")) : t("სანდო ქულა არ გაცემულა.")}</h1><p>{result.available ? t("პასუხებზე თავის არიდებით ან დაუსაბუთებელი პასუხების გაცემით ქულები ნულდება.") : t("საუბრის ტრანსკრიფცია მიუწვდომელი იყო, ამიტომ eConsul-მა უარი თქვა პროცენტის გამოგონებაზე.")}</p></div><div className="score-ring" style={{ "--score": `${result.score * 3.6}deg` } as React.CSSProperties}><div><strong>{result.available ? `${result.score}%` : "—"}</strong><span>{result.available ? t("გასაუბრების ქულა") : t("არ არის მტკიცებულება")}</span></div></div></div>
           <div className="result-grid"><article className="result-card strengths"><div className="result-title"><span>✓</span><h2>{t("შედეგები")}</h2></div><ul>{result.strengths.length ? result.strengths.map((item) => <li key={item.title}><strong>{item.title}</strong><small>{item.detail}</small></li>) : <li><strong>{t("არანაირი დადებითი მტკიცება მტკიცებულების გარეშე")}</strong><small>{t("აპლიკაცია არ შეაქებს პასუხებს, რომელთა მოსმენაც და გაანალიზებაც ვერ შეძლო.")}</small></li>}</ul></article><article className="result-card improvements"><div className="result-title"><span>↗</span><h2>{t("საჭიროებს გაუმჯობესებას")}</h2></div><ul>{result.improvements.map((item) => <li key={item.title}><strong>{item.title}</strong><small>{item.detail}</small></li>)}</ul></article></div>
           {result.available && <div className="breakdown-card"><div><h2>{t("ქულების გადანაწილება")}</h2><p>{t("გადმოცემის შეფასება ეფუძნება მეტყველების ამოცნობის სანდოობას, ხმის აქტივობას და პასუხის პროფესიულ ტონს — და არა თქვენი პიროვნების შეფასებას.")}</p></div>{[{ label: t("რელევანტურობა"), value: result.relevance }, { label: t("სიცხადე"), value: result.clarity }, { label: t("გადმოცემა"), value: result.delivery }, { label: t("დასრულებულია"), value: result.completeness }].map((item) => <div className="score-row" key={item.label}><span>{item.label}</span><i><b style={{ width: `${item.value}%` }} /></i><strong>{item.value}</strong></div>)}</div>}
           <div className="transcript-review"><div><h2>{t("თქვენი ინტერვიუ: კითხვები და პასუხები")}</h2><p>{t("გადახედეთ ზუსტად რა გკითხეს და რა გაიგონა აპლიკაციამ თითოეული პასუხიდან.")}</p></div><div className="qa-review-list">{responses.map((response, index) => <article key={`${response.question}-${index}`}><span>Q{index + 1}</span><div><strong>{response.question}</strong><p>{response.answer || t("ვერ მოხერხდა საუბრის აღქმა.")}</p></div></article>)}</div></div>
           <div className="result-actions"><a className="primary-button consultation-button" href={`https://wa.me/995596114488?text=${encodeURIComponent(t("გამარჯობა eConsul, მსურს კონსულტაციის დაჯავშნა აშშ-ის ვიზის ინტერვიუსთვის ექსპერტთან მოსამზადებლად."))}`} target="_blank" rel="noopener noreferrer">{t("მოემზადე ინტერვიუსთვის პროფესიონალის დახმარებით. დაგვიკავშირდი WhatsApp-ზე")} <span>→</span></a><button className="secondary-button" onClick={restart}>{t("სცადე ხელახლა")}</button></div>
           <p className="legal-note">{t("eConsul არის დამოუკიდებელი საგანმანათლებლო პრაქტიკული ინსტრუმენტი. ეს ქულა ზომავს მხოლოდ ჩაწერილ პრაქტიკულ პასუხს. ეს არ არის ვიზის გადაწყვეტილება, დამტკიცების პროგნოზი, ფსიქოლოგიური შეფასება ან იურიდიული რჩევა.")}</p>
         </section>
+      )}
+
+      {reportOpen && (
+        <div className="report-dialog-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setReportOpen(false); }}>
+          <section className="report-dialog" role="dialog" aria-modal="true" aria-labelledby="report-dialog-title">
+            <button className="report-dialog-close" onClick={() => setReportOpen(false)} aria-label={t("დახურვა")}>×</button>
+            <p className="section-kicker">eConsul</p>
+            <h2 id="report-dialog-title">{t("შეგვატყობინეთ პრობლემის შესახებ")}</h2>
+            <p>{t("მოკლედ აღწერეთ, რა არ მუშაობს. თქვენი შეტყობინება გაიხსნება WhatsApp-ში და პირდაპირ eConsul-ს გაეგზავნება.")}</p>
+            <label htmlFor="problem-report">{t("რა პრობლემა შეგექმნათ?")}</label>
+            <textarea id="problem-report" autoFocus value={reportMessage} onChange={(event) => setReportMessage(event.target.value)} placeholder={t("აღწერეთ პრობლემა...")} rows={5} />
+            <div className="report-dialog-actions">
+              <button className="secondary-button" onClick={() => setReportOpen(false)}>{t("გაუქმება")}</button>
+              <a className={`primary-button ${reportMessage.trim() ? "" : "disabled"}`} href={reportMessage.trim() ? `https://wa.me/995596114488?text=${encodeURIComponent(`${t("გამარჯობა eConsul, მსურს პრობლემის შეტყობინება:")}\n\n${reportMessage.trim()}`)}` : undefined} target="_blank" rel="noopener noreferrer" aria-disabled={!reportMessage.trim()} onClick={(event) => { if (!reportMessage.trim()) event.preventDefault(); }}>{t("გაგზავნა WhatsApp-ზე")} <span>→</span></a>
+            </div>
+          </section>
+        </div>
       )}
     </main>
   );
