@@ -51,10 +51,13 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, a:focus-visib
 .report-dialog > p:not(.section-kicker) { margin: 16px 0 24px; color: var(--muted); line-height: 1.6; }
 .report-dialog label { display: block; margin-bottom: 9px; font-size: 13px; font-weight: 900; }
 .report-dialog textarea { width: 100%; resize: vertical; min-height: 126px; padding: 15px 16px; border: 1px solid var(--line); border-radius: 14px; background: #fafbf5; color: var(--charcoal); line-height: 1.5; }
+.report-dialog textarea:disabled { opacity: .64; }
 .report-dialog-close { position: absolute; top: 16px; right: 16px; width: 36px; height: 36px; border: 0; border-radius: 50%; background: #eef1e7; color: var(--charcoal); font-size: 24px; line-height: 1; }
+.report-status { min-height: 22px; margin-top: 10px; font-size: 13px; font-weight: 900; }
+.report-status.sent { color: var(--deep-green); }
+.report-status.error { color: #aa3030; }
 .report-dialog-actions { display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-top: 22px; }
-.report-dialog-actions a { display: inline-flex; align-items: center; justify-content: center; }
-.report-dialog-actions .disabled { opacity: .42; cursor: not-allowed; pointer-events: none; }
+.report-dialog-actions .primary-button { display: inline-flex; align-items: center; justify-content: center; }
 
 .landing-page { min-height: calc(100vh - 78px); background: #f7f6ec; }
 .landing-hero { min-height: calc(100vh - 78px); padding: clamp(22px, 3vw, 46px) var(--page-gutter); position: relative; overflow: hidden; }

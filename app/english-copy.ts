@@ -163,12 +163,15 @@ export const ENGLISH_BY_GEORGIAN: Record<string, string> = {
   "ჯერ მოუსმინეთ": "Listen first", // home.step_1_title
   "პრობლემის შეტყობინება": "Report a problem",
   "შეგვატყობინეთ პრობლემის შესახებ": "Tell us about a problem",
-  "მოკლედ აღწერეთ, რა არ მუშაობს. თქვენი შეტყობინება გაიხსნება ელფოსტის აპლიკაციაში და გაეგზავნება eConsul-ს.": "Briefly describe what is not working. Your message will open in your email app and be addressed to eConsul.",
+  "მოკლედ აღწერეთ, რა არ მუშაობს. შეტყობინება პირდაპირ გაეგზავნება eConsul-ს ამ გვერდიდან.": "Briefly describe what is not working. Your report will be sent directly to eConsul from this page.",
   "რა პრობლემა შეგექმნათ?": "What problem did you encounter?",
   "აღწერეთ პრობლემა...": "Describe the problem...",
   "დახურვა": "Close",
   "გაუქმება": "Cancel",
-  "ელფოსტით გაგზავნა": "Send by email",
+  "პრობლემის გაგზავნა": "Send report",
+  "იგზავნება...": "Sending...",
+  "პრობლემის შესახებ შეტყობინება გაიგზავნა.": "Your problem report was sent.",
+  "შეტყობინება ვერ გაიგზავნა. გთხოვთ, სცადოთ ხელახლა.": "The report could not be sent. Please try again.",
   "eConsul-ის პრობლემის შეტყობინება": "eConsul problem report",
   "გამარჯობა eConsul, მსურს პრობლემის შეტყობინება:": "Hello eConsul, I would like to report a problem:",
 };

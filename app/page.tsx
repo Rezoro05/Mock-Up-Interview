@@ -7,6 +7,7 @@ import { RUSSIAN_BY_GEORGIAN } from "./russian-copy";
 type VisaType = "B1/B2" | "F-1" | "J-1";
 type Step = "landing" | "briefing" | "interview" | "processing" | "results";
 type InterfaceLanguage = "en" | "ka" | "ru";
+type ReportStatus = "idle" | "sending" | "sent" | "error";
 
 type QuestionSpec = {
   prompt: string;
@@ -251,6 +252,7 @@ export default function Home() {
   const [recognitionSupported, setRecognitionSupported] = useState(true);
   const [reportOpen, setReportOpen] = useState(false);
   const [reportMessage, setReportMessage] = useState("");
+  const [reportStatus, setReportStatus] = useState<ReportStatus>("idle");
   const t = useCallback((georgian: string) => {
     if (language === "en") return ENGLISH_BY_GEORGIAN[georgian] ?? georgian;
     if (language === "ru") return RUSSIAN_BY_GEORGIAN[georgian] ?? georgian;
@@ -687,6 +689,31 @@ export default function Home() {
     setStep("briefing");
   };
 
+  const submitProblemReport = async () => {
+    const message = reportMessage.trim();
+    if (!message || reportStatus === "sending") return;
+    setReportStatus("sending");
+    try {
+      const response = await fetch("https://formsubmit.co/ajax/rkupa2011@gmail.com", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({
+          _subject: t("eConsul-ის პრობლემის შეტყობინება"),
+          _template: "table",
+          _honey: "",
+          message,
+          interface_language: language.toUpperCase(),
+          page: window.location.href,
+        }),
+      });
+      if (!response.ok) throw new Error("Report delivery failed");
+      setReportStatus("sent");
+      setReportMessage("");
+    } catch {
+      setReportStatus("error");
+    }
+  };
+
   const result = useMemo(() => {
     const noScore = !recognitionSupported;
     if (!answers.length || noScore) {
@@ -731,7 +758,7 @@ export default function Home() {
       <header className="site-header">
         <div className="header-brand"><button className="logo-button" onClick={() => setStep("landing")} aria-label={t("მთავარ გვერდზე გადასვლა")}><BrandMark /></button><span className="beta-badge">{t("ბეტა")}</span></div>
         <div className="header-right">
-          <button className="report-problem-button" onClick={() => setReportOpen(true)} aria-label={t("პრობლემის შეტყობინება")} title={t("პრობლემის შეტყობინება")}><span aria-hidden="true">!</span><small>{t("პრობლემის შეტყობინება")}</small></button>
+          <button className="report-problem-button" onClick={() => { setReportStatus("idle"); setReportOpen(true); }} aria-label={t("პრობლემის შეტყობინება")} title={t("პრობლემის შეტყობინება")}><span aria-hidden="true">!</span><small>{t("პრობლემის შეტყობინება")}</small></button>
           <div className="language-toggle" role="group" aria-label="Language / ენა / Язык">
             <button className={language === "en" ? "active" : ""} onClick={() => setLanguage("en")} aria-pressed={language === "en"} title="English"><span aria-hidden="true">🇺🇸</span><small>ENG</small></button>
             <button className={language === "ka" ? "active" : ""} onClick={() => setLanguage("ka")} aria-pressed={language === "ka"} title="ქართული"><span aria-hidden="true">🇬🇪</span><small>GEO</small></button>
@@ -827,12 +854,16 @@ export default function Home() {
             <button className="report-dialog-close" onClick={() => setReportOpen(false)} aria-label={t("დახურვა")}>×</button>
             <p className="section-kicker">eConsul</p>
             <h2 id="report-dialog-title">{t("შეგვატყობინეთ პრობლემის შესახებ")}</h2>
-            <p>{t("მოკლედ აღწერეთ, რა არ მუშაობს. თქვენი შეტყობინება გაიხსნება ელფოსტის აპლიკაციაში და გაეგზავნება eConsul-ს.")}</p>
+            <p>{t("მოკლედ აღწერეთ, რა არ მუშაობს. შეტყობინება პირდაპირ გაეგზავნება eConsul-ს ამ გვერდიდან.")}</p>
             <label htmlFor="problem-report">{t("რა პრობლემა შეგექმნათ?")}</label>
-            <textarea id="problem-report" autoFocus value={reportMessage} onChange={(event) => setReportMessage(event.target.value)} placeholder={t("აღწერეთ პრობლემა...")} rows={5} />
+            <textarea id="problem-report" autoFocus value={reportMessage} onChange={(event) => { setReportMessage(event.target.value); if (reportStatus !== "sending") setReportStatus("idle"); }} placeholder={t("აღწერეთ პრობლემა...")} rows={5} disabled={reportStatus === "sending" || reportStatus === "sent"} />
+            <div className={`report-status ${reportStatus}`} role="status" aria-live="polite">
+              {reportStatus === "sent" && <span>✓ {t("პრობლემის შესახებ შეტყობინება გაიგზავნა.")}</span>}
+              {reportStatus === "error" && <span>{t("შეტყობინება ვერ გაიგზავნა. გთხოვთ, სცადოთ ხელახლა.")}</span>}
+            </div>
             <div className="report-dialog-actions">
-              <button className="secondary-button" onClick={() => setReportOpen(false)}>{t("გაუქმება")}</button>
-              <a className={`primary-button ${reportMessage.trim() ? "" : "disabled"}`} href={reportMessage.trim() ? `mailto:rkupa2011@gmail.com?subject=${encodeURIComponent(t("eConsul-ის პრობლემის შეტყობინება"))}&body=${encodeURIComponent(`${t("გამარჯობა eConsul, მსურს პრობლემის შეტყობინება:")}\n\n${reportMessage.trim()}`)}` : undefined} aria-disabled={!reportMessage.trim()} onClick={(event) => { if (!reportMessage.trim()) event.preventDefault(); }}>{t("ელფოსტით გაგზავნა")} <span>→</span></a>
+              <button className="secondary-button" onClick={() => setReportOpen(false)}>{reportStatus === "sent" ? t("დახურვა") : t("გაუქმება")}</button>
+              {reportStatus !== "sent" && <button className="primary-button" disabled={!reportMessage.trim() || reportStatus === "sending"} onClick={submitProblemReport}>{reportStatus === "sending" ? t("იგზავნება...") : t("პრობლემის გაგზავნა")} <span>→</span></button>}
             </div>
           </section>
         </div>
